@@ -1,0 +1,7 @@
+inherit_gem:
+  google-style: google-style.yml
+
+Metrics/ClassLength:
+  Max: 200
+Style/Documentation:
+  Enabled: false
