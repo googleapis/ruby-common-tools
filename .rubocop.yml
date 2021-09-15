@@ -1,7 +1,19 @@
 inherit_gem:
   google-style: google-style.yml
 
+Metrics/BlockLength:
+  Exclude:
+    - "owlbot-postprocessor/test/test_*.rb"
 Metrics/ClassLength:
-  Max: 200
+  Max: 250
+Metrics/MethodLength:
+  Max: 30
+Metrics/ModuleLength:
+  Max: 250
+Metrics/PerceivedComplexity:
+  Max: 15
 Style/Documentation:
   Enabled: false
+Style/MixinGrouping:
+  Exclude:
+    - "owlbot-postprocessor/.toys.rb"

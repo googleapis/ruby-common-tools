@@ -1,0 +1,14 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: '/bin/bash'
+    args:
+      - '-c'
+      - |
+        docker build \
+          -t gcr.io/cloud-devrel-public-resources/owlbot-ruby:${TAG_NAME/owlbot-preprocessor\//} \
+          -t gcr.io/cloud-devrel-public-resources/owlbot-ruby:latest \
+          -f owlbot-preprocessor/Dockerfile \
+          owlbot-preprocessor
+images:
+  - 'gcr.io/cloud-devrel-public-resources/owlbot-ruby:${TAG_NAME/owlbot-preprocessor\//}'
+  - 'gcr.io/cloud-devrel-public-resources/owlbot-ruby:latest'
