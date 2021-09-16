@@ -1,0 +1,32 @@
+name: Tag OwlBot Postprocessor Release
+on:
+  push:
+    branches: [main]
+    paths: 'owlbot-postproceessor/**'
+  workflow_dispatch:
+
+jobs:
+  github-release:
+    if: ${{ github.repository == 'googleapis/ruby-common-tools' }}
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_PLEASE_DISABLE: ${{ secrets.RELEASE_PLEASE_DISABLE }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Install NodeJS 14.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: "14.x"
+      - name: Install tools
+        run: "npm install release-please"
+      - name: Execute
+        shell: bash
+        run: |
+          if [ -z "$RELEASE_PLEASE_DISABLE" ]; then
+            npx release-please github-release \
+              --repo-url=googleapis/ruby-common-tools \
+              --package-name=owlbot-postprocessor \
+              --token=$GITHUB_TOKEN
+          fi
