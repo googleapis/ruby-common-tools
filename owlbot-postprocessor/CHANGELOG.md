@@ -1,7 +1,6 @@
 # Changelog
 
-### [0.1.3](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.1.2...owlbot-postprocessor/v0.1.3) (2021-09-17)
-
+## [0.1.3](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.1.2...owlbot-postprocessor/v0.1.3) (2021-09-17)
 
 ### Bug Fixes
 
