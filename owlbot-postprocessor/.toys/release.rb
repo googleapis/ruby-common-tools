@@ -54,7 +54,7 @@ tool "prod" do
       "gcloud", "builds", "submit",
       "--project=cloud-devrel-public-resources",
       "--config=owlbot-preprocessor/cloudbuild.yaml",
-      "--substitutions=TAG_NAME=owlbot-preprocessor/v#{version}",
+      "--substitutions=_VERSION=v#{version}",
       "."
     ]
     logger.info "... Done"
