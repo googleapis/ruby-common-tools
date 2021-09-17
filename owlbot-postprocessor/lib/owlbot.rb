@@ -298,7 +298,7 @@ module OwlBot
           true
         else
           path_info path, "retained existing non-generated file"
-          @next_static_files << path
+          recursively_add_to_next_static path
           false
         end
       elsif ::File.directory? dest
@@ -353,6 +353,8 @@ module OwlBot
     end
 
     def recursively_add_to_next_static path
+      check_ignore_path = ::File.join gem_name, path
+      return unless `git check-ignore #{check_ignore_path}`.empty?
       full_path = ::File.join gem_dir, path
       if ::File.file? full_path
         @next_static_files << path

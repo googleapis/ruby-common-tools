@@ -33,6 +33,9 @@ describe OwlBot do
   before do
     ::FileUtils.rm_rf repo_dir
     ::FileUtils.mkdir_p repo_dir
+    ::Dir.chdir repo_dir do
+      `git init`
+    end
     ::FileUtils.mkdir_p gem_dir
     ::FileUtils.mkdir_p staging_dir
   end
@@ -115,6 +118,7 @@ describe OwlBot do
   end
 
   it "copies files using the image" do
+    create_gem_file "static.txt", "here before\n"
     create_staging_file "hello.txt", "hello world\n"
     create_staging_file "lib/hello.rb", "puts 'hello'\n"
 
@@ -122,12 +126,13 @@ describe OwlBot do
 
     assert_gem_file "hello.txt", "hello world\n"
     assert_gem_file "lib/hello.rb", "puts 'hello'\n"
+    assert_gem_file "static.txt", "here before\n"
 
     paths = ::Dir.glob "**/*", base: gem_dir
-    assert_equal 3, paths.size # Two files and one directory
+    assert_equal 4, paths.size # Three files and one directory
 
     assert_equal ["hello.txt", "lib/hello.rb"], manifest["generated"]
-    assert_equal [], manifest["static"]
+    assert_equal ["static.txt"], manifest["static"]
   end
 
   it "copies files into an existing gem dir" do
@@ -266,5 +271,23 @@ describe OwlBot do
 
     assert_equal ["lib/bar.rb", "lib/baz.rb"], manifest["generated"]
     assert_equal [".owlbot.rb", "lib/foo.rb"], manifest["static"]
+  end
+
+  it "omits gitignored files from the static manifest" do
+    create_gem_file "ignored.txt", "ignored\n"
+    create_gem_file "static.txt", "static\n"
+    create_gem_file "generated.txt", "generated\n"
+    create_gem_file ".gitignore", "ignored.txt\n"
+    create_staging_file "generated.txt", "generated again\n"
+
+    invoke_owlbot
+
+    assert_gem_file "ignored.txt", "ignored\n"
+    create_gem_file "static.txt", "static\n"
+    create_gem_file "generated.txt", "generated again\n"
+    create_gem_file ".gitignore", "ignored.txt\n"
+
+    assert_equal ["generated.txt"], manifest["generated"]
+    assert_equal [".gitignore", "static.txt"], manifest["static"]
   end
 end
