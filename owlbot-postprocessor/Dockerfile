@@ -13,9 +13,9 @@
 # limitations under the License.
 
 FROM ruby:3.0-buster
-RUN mkdir /ruby-postprocessor
+RUN mkdir /ruby-postprocessor && gem install toys-core
 WORKDIR /ruby-postprocessor
 COPY lib/*.rb /ruby-postprocessor/
 COPY *.md /ruby-postprocessor/
-ENTRYPOINT [ "ruby" ]
-CMD [ "/ruby-postprocessor/entrypoint.rb" ]
+ENTRYPOINT ["ruby", "/ruby-postprocessor/entrypoint.rb"]
+CMD []

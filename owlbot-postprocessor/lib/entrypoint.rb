@@ -14,6 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "toys-core"
+require "logger"
 require_relative "owlbot"
 
-OwlBot.entrypoint quiet_level: ::ENV["QUIET_LEVEL"].to_i
+cli = ::Toys::CLI.new base_level: ::Logger::INFO
+
+cli.add_config_block do
+  desc "Ruby postprocessor for OwlBot"
+
+  flag :gem_name, "--gem=NAME"
+
+  def run
+    OwlBot.entrypoint gem_name: gem_name, logger: logger
+  rescue OwlBot::Error => e
+    logger.error e.message
+    exit 1
+  end
+end
+
+exit cli.run ::ARGV

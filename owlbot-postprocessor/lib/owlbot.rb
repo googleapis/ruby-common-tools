@@ -59,6 +59,12 @@ module OwlBot
     end
   end
 
+  ##
+  # Exception thrown in the case of fatal preprocessor errors
+  #
+  class Error < ::StandardError
+  end
+
   class << self
     ##
     # The full path to the root of the repository clone
@@ -138,14 +144,11 @@ module OwlBot
     attr_reader :content_modifiers
 
     ##
-    # Quietness of logging.
+    # The logger in use
     #
-    # * `0` (the default) indicates normal logging, displaying for each file
-    #   the move decision made and any modifications done
-    # * `1` indicates quiet mode, displaying only warnings and fatal exceptions
-    # * `2` indicates extra-quiet mode, displaying only fatal exceptions
+    # @return [Logger]
     #
-    attr_accessor :quiet_level
+    attr_accessor :logger
 
     ##
     # The version of the Ruby postprocessor
@@ -216,12 +219,21 @@ module OwlBot
       self
     end
 
+    ##
+    # You may call this method to report a fatal error
+    #
+    # @param message [String]
+    #
+    def error message
+      raise Error, message
+    end
+
     # ---- Private implementation below this point ----
 
     # @private
-    def entrypoint quiet_level: 0
-      @quiet_level = quiet_level
-      setup
+    def entrypoint logger: nil, gem_name: nil
+      setup logger, gem_name
+      sanity_check
       apply_default_config
       if script_path
         load script_path
@@ -233,28 +245,46 @@ module OwlBot
 
     private
 
-    def setup
+    def setup logger, gem_name
+      @logger = logger
+      @gem_name = gem_name
       @repo_dir = ::Dir.getwd
       @staging_root_dir = ::File.join @repo_dir, STAGING_ROOT_NAME
-      staging_dirs = ::Dir.children @staging_root_dir
-      raise "Unexpected staging dirs: #{staging_dirs.inspect}" unless staging_dirs.size == 1
-      @staging_dir = ::File.join @staging_root_dir, staging_dirs.first
-      @gem_name = ::File.basename @staging_dir
+      @gem_name ||= find_staged_gem_name @staging_root_dir
+      @staging_dir = ::File.join @staging_root_dir, @gem_name
       @gem_dir = ::File.join @repo_dir, @gem_name
-      path = ::File.join @gem_dir, SCRIPT_NAME
-      @script_path = ::File.file?(path) ? path : nil
+      @script_path = find_custom_script gem_dir
       @manifest_path = ::File.join @gem_dir, MANIFEST_NAME
-      @previous_generated_files = []
-      @previous_static_files = []
+      @previous_generated_files, @previous_static_files = load_existing_manifest @manifest_path
       @next_generated_files = []
       @next_static_files = []
-      if ::File.file? @manifest_path
-        manifest = ::JSON.load_file @manifest_path
-        @previous_generated_files = manifest["generated"] || []
-        @previous_static_files = manifest["static"] || []
-      end
       @preserved_paths = []
       @content_modifiers = []
+    end
+
+    def find_staged_gem_name staging_root_dir
+      staging_dirs = ::Dir.children staging_root_dir
+      error "Unexpected staging dirs: #{staging_dirs.inspect}" unless staging_dirs.size == 1
+      staging_dirs.first
+    end
+
+    def find_custom_script gem_dir
+      path = ::File.join gem_dir, SCRIPT_NAME
+      ::File.file?(path) ? path : nil
+    end
+
+    def load_existing_manifest manifest_path
+      if ::File.file? manifest_path
+        manifest = ::JSON.load_file manifest_path
+        [manifest["generated"] || [], manifest["static"] || []]
+      else
+        [[], []]
+      end
+    end
+
+    def sanity_check
+      error "No staging directory #{@staging_dir}" unless ::File.directory? @staging_dir
+      error "No gem directory #{@gem_dir}" unless ::File.directory? @gem_dir
     end
 
     def apply_default_config
@@ -398,11 +428,11 @@ module OwlBot
     end
 
     def path_info path, str
-      puts "#{path}: #{str}" if quiet_level <= 0
+      logger&.info "#{path}: #{str}"
     end
 
     def path_warning path, str
-      puts "#{path}: WARNING: #{str}" if quiet_level <= 1
+      logger&.warn "#{path}: #{str}"
     end
   end
 end
