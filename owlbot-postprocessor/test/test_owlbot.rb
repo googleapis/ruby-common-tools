@@ -18,7 +18,6 @@ require "helper"
 require "fileutils"
 
 describe OwlBot do
-  let(:quiet_level) { 2 }
   let(:base_dir) { ::File.dirname __dir__ }
   let(:image_name) { "owlbot-postprocessor-test" }
   let(:manifest_file_name) { ".owlbot-manifest.json" }
@@ -44,16 +43,18 @@ describe OwlBot do
     ::FileUtils.rm_rf repo_dir
   end
 
-  def create_staging_file path, content
-    path = ::File.join staging_dir, path
+  def create_staging_file path, content, gem: nil
+    dir = gem ? ::File.join(staging_root_dir, gem) : staging_dir
+    path = ::File.join dir, path
     ::FileUtils.mkdir_p ::File.dirname path
     ::File.open path, "w" do |file|
       file.write content
     end
   end
 
-  def create_gem_file path, content
-    path = ::File.join gem_dir, path
+  def create_gem_file path, content, gem: nil
+    dir = gem ? ::File.join(repo_dir, gem) : gem_dir
+    path = ::File.join dir, path
     ::FileUtils.mkdir_p ::File.dirname path
     ::File.open path, "w" do |file|
       file.write content
@@ -70,33 +71,35 @@ describe OwlBot do
     end
   end
 
-  def assert_gem_file path, content
-    path = ::File.join gem_dir, path
+  def assert_gem_file path, content, gem: nil
+    dir = gem ? ::File.join(repo_dir, gem) : gem_dir
+    path = ::File.join dir, path
     assert ::File.exist? path
     assert_equal content, ::File.read(path)
   end
 
-  def refute_gem_file path
-    path = ::File.join gem_dir, path
+  def refute_gem_file path, gem: nil
+    dir = gem ? ::File.join(repo_dir, gem) : gem_dir
+    path = ::File.join dir, path
     refute ::File.exist? path
   end
 
-  def invoke_owlbot
+  def invoke_owlbot gem: nil
     ::Dir.chdir repo_dir do
-      OwlBot.entrypoint quiet_level: quiet_level
+      OwlBot.entrypoint gem_name: gem
     end
   end
 
-  def invoke_image
+  def invoke_image *args
     cmd = [
       "docker", "run",
       "--rm",
       "--user", "#{::Process.uid}:#{::Process.gid}",
       "-v", "#{repo_dir}:/repo",
       "-w", "/repo",
-      "-e", "QUIET_LEVEL=#{quiet_level}",
-      image_name
-    ]
+      image_name,
+      "-qq"
+    ] + args
     assert system cmd.join(" ")
   end
 
@@ -115,24 +118,6 @@ describe OwlBot do
 
     assert_equal ["hello.txt", "lib/hello.rb"], manifest["generated"]
     assert_equal [], manifest["static"]
-  end
-
-  it "copies files using the image" do
-    create_gem_file "static.txt", "here before\n"
-    create_staging_file "hello.txt", "hello world\n"
-    create_staging_file "lib/hello.rb", "puts 'hello'\n"
-
-    invoke_image
-
-    assert_gem_file "hello.txt", "hello world\n"
-    assert_gem_file "lib/hello.rb", "puts 'hello'\n"
-    assert_gem_file "static.txt", "here before\n"
-
-    paths = ::Dir.glob "**/*", base: gem_dir
-    assert_equal 4, paths.size # Three files and one directory
-
-    assert_equal ["hello.txt", "lib/hello.rb"], manifest["generated"]
-    assert_equal ["static.txt"], manifest["static"]
   end
 
   it "copies files into an existing gem dir" do
@@ -289,5 +274,58 @@ describe OwlBot do
 
     assert_equal ["generated.txt"], manifest["generated"]
     assert_equal [".gitignore", "static.txt"], manifest["static"]
+  end
+
+  it "errors if there are multiple staging directories and no explicit gem" do
+    create_gem_file "hello.txt", "hello world\n"
+    create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
+    create_staging_file "hello.txt", "hello again\n"
+    create_staging_file "hello.txt", "hello again\n", gem: "another-gem"
+
+    assert_raises OwlBot::Error do
+      invoke_owlbot
+    end
+  end
+
+  it "supports selecting a specific gem" do
+    create_gem_file "hello.txt", "hello world\n"
+    create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
+    create_staging_file "hello.txt", "hello again\n"
+    create_staging_file "hello.txt", "hello again\n", gem: "another-gem"
+
+    invoke_owlbot gem: gem_name
+
+    assert_gem_file "hello.txt", "hello again\n"
+    assert_gem_file "hello.txt", "hello world\n", gem: "another-gem"
+  end
+
+  it "copies files using the image" do
+    create_gem_file "static.txt", "here before\n"
+    create_staging_file "hello.txt", "hello world\n"
+    create_staging_file "lib/hello.rb", "puts 'hello'\n"
+
+    invoke_image
+
+    assert_gem_file "hello.txt", "hello world\n"
+    assert_gem_file "lib/hello.rb", "puts 'hello'\n"
+    assert_gem_file "static.txt", "here before\n"
+
+    paths = ::Dir.glob "**/*", base: gem_dir
+    assert_equal 4, paths.size # Three files and one directory
+
+    assert_equal ["hello.txt", "lib/hello.rb"], manifest["generated"]
+    assert_equal ["static.txt"], manifest["static"]
+  end
+
+  it "supports selecting a specific gem using the image" do
+    create_gem_file "hello.txt", "hello world\n"
+    create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
+    create_staging_file "hello.txt", "hello again\n"
+    create_staging_file "hello.txt", "hello again\n", gem: "another-gem"
+
+    invoke_image "--gem=another-gem"
+
+    assert_gem_file "hello.txt", "hello world\n"
+    assert_gem_file "hello.txt", "hello again\n", gem: "another-gem"
   end
 end
