@@ -5,10 +5,10 @@ steps:
       - '-c'
       - |
         docker build \
-          -t gcr.io/cloud-devrel-public-resources/owlbot-ruby:${TAG_NAME/owlbot-preprocessor\//} \
+          -t gcr.io/cloud-devrel-public-resources/owlbot-ruby:${TAG_NAME:21} \
           -t gcr.io/cloud-devrel-public-resources/owlbot-ruby:latest \
-          -f owlbot-preprocessor/Dockerfile \
-          owlbot-preprocessor
+          -f owlbot-postprocessor/Dockerfile \
+          owlbot-postprocessor
 images:
-  - 'gcr.io/cloud-devrel-public-resources/owlbot-ruby:${TAG_NAME/owlbot-preprocessor\//}'
+  - 'gcr.io/cloud-devrel-public-resources/owlbot-ruby:${TAG_NAME:21}'
   - 'gcr.io/cloud-devrel-public-resources/owlbot-ruby:latest'

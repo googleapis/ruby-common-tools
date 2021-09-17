@@ -2,7 +2,7 @@ name: Tag OwlBot Postprocessor Release
 on:
   push:
     branches: [main]
-    paths: 'owlbot-postproceessor/**'
+    paths: 'owlbot-postprocessor/**'
   workflow_dispatch:
 
 jobs:
@@ -28,5 +28,7 @@ jobs:
             npx release-please github-release \
               --repo-url=googleapis/ruby-common-tools \
               --package-name=owlbot-postprocessor \
+              --path=owlbot-postprocessor \
+              --monorepo-tags \
               --token=$GITHUB_TOKEN
           fi
