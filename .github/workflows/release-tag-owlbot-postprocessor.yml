@@ -29,6 +29,7 @@ jobs:
               --repo-url=googleapis/ruby-common-tools \
               --package-name=owlbot-postprocessor \
               --path=owlbot-postprocessor \
+              --release-type=ruby \
               --monorepo-tags \
               --token=$GITHUB_TOKEN
           fi
