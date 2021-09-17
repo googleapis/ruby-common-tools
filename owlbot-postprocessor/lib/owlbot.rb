@@ -148,6 +148,15 @@ module OwlBot
     attr_accessor :quiet_level
 
     ##
+    # The version of the Ruby postprocessor
+    #
+    # @return [String]
+    #
+    def version
+      VERSION
+    end
+
+    ##
     # Add paths and/or regexes identifying files that should be preserved
     # when {#move_files} is later performed. A preserved file (or directory)
     # will not be overwritten by newly generated files, nor will it be deleted
@@ -362,7 +371,7 @@ module OwlBot
       content_modifiers.each do |modifier|
         next_content = modifier.call content.dup, dest_content, path
         if next_content != content
-          path_info path, "modifier #{modifier.name.inspect} applied"
+          path_info path, "modifier #{modifier.name.inspect} changed the content"
           content = next_content
         end
       end
