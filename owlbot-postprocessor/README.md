@@ -9,8 +9,8 @@ Ruby library.
 ## Usage
 
 This postprocessor is invoked directly by OwlBot. A library requests use of
-this postprocessor by referencing it in the `.OwlBot.yaml` file. It can also
-optionally customize the postprocessor by providing a Ruby configuration file.
+this postprocessor by referencing it in the `.OwlBot.yaml` config. A library
+can also optionally customize the postprocessor by providing Ruby code.
 
 ### Basic usage
 
@@ -18,7 +18,7 @@ To configure a Ruby GAPIC client for OwlBot, create a `.OwlBot.yaml` file in
 the library directory. It _must_ instruct OwlBot to copy the newly generated
 library code into the directory `/owl-bot-staging/$GEM_NAME` in the repo. It
 also _should_ specify the Ruby postprocessor Docker image
-`gcr.io.cloud-devrel-public-resources/owlbot-ruby:latest` (unless a global
+`gcr.io/cloud-devrel-public-resources/owlbot-ruby:latest` (unless a global
 `/.github/.OwlBot.yaml` file already does so).
 
 Here is an example OwlBot config:
@@ -27,7 +27,7 @@ Here is an example OwlBot config:
 # /google-cloud-access_approval-v1/.OwlBot.yaml
 
 docker:
-  image: gcr.io.cloud-devrel-public-resources/owlbot-ruby:latest
+  image: gcr.io/cloud-devrel-public-resources/owlbot-ruby:latest
 deep-copy-regex:
   - source: /google/cloud/accessapproval/v1/google-cloud-accessapproval-v1-ruby/(.*)
     dest: /owl-bot-staging/google-cloud-access_approval-v1/$1
@@ -98,11 +98,10 @@ need to remove the existing configurations. For example:
 ```ruby
 # .owlbot.rb
 
-# The changelog and version files are named differently in this library,
-# so remove the default preserved paths and add new ones.
-OwlBot.preserved_paths.clear
-OwlBot.preserve path: ["HISTORY.md",
-                       "lib/#{OwlBot.gem_name.tr '-', '/'}/gem_version.rb"]
+# The changelog is named differently in this library, so remove the default
+# from the preserved paths and add the new one.
+OwlBot.preserved_paths.delete "CHANGELOG.md"
+OwlBot.preserve path: "HISTORY.md"
 
 OwlBot.move_files
 ```
@@ -134,9 +133,17 @@ command for more details.
 
 ### Releases
 
-Releases are handled via release-please. After a release is tagged on GitHub,
-a Cloud Build job will trigger that builds the production image (with the
+Releases are handled via release-please. After a release-please pull request is
+merged, a GitHub Actions job will automatically tag the release. This will, in
+turn, trigger a Cloud Build job that builds the production image (with the
 `latest` Docker image tag.)
 
+Normally, release-please will offer a release PR automatically after semantic
+changes are merged into the owlbot-postprocessor directory. It can also be run
+manually by triggering the "Release-Please OwlBot Postprocessor" GitHub Action.
+When triggering manually, you can also specify a particular version.
+
 It is also possible to build "ad-hoc" test images using the `toys release dev`
-command. These images are tagged with a timestamp rather than `latest`.
+command. These images are tagged with a timestamp (rather than `latest`). You
+need sufficient permissions in the "cloud-devrel-public-resources" project to
+run an ad-hoc build.
