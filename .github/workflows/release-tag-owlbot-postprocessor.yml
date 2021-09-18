@@ -31,6 +31,5 @@ jobs:
               --path=owlbot-postprocessor \
               --release-type=ruby \
               --monorepo-tags \
-              --release-label='autorelease: published' \
               --token=$GITHUB_TOKEN
           fi
