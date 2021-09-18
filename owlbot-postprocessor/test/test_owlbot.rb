@@ -111,7 +111,7 @@ describe OwlBot do
 
     assert_gem_file "hello.txt", "hello world\n"
     assert_gem_file "lib/hello.rb", "puts 'hello'\n"
-    refute ::File.exist? staging_root_dir
+    refute ::File.exist? staging_dir
 
     paths = ::Dir.glob "**/*", base: gem_dir
     assert_equal 3, paths.size # Two files and one directory
@@ -176,8 +176,8 @@ describe OwlBot do
     assert_gem_file "lib/my/gem/version.rb", "VERSION = 'old'\n"
     assert_gem_file "lib/hello.rb", "puts 'hello2'\n"
 
-    assert_equal ["lib/hello.rb"], manifest["generated"]
-    assert_equal ["CHANGELOG.md", "lib/my/gem/version.rb"], manifest["static"]
+    assert_equal ["CHANGELOG.md", "lib/hello.rb", "lib/my/gem/version.rb"], manifest["generated"]
+    assert_equal [], manifest["static"]
   end
 
   it "handles deletion cases" do
@@ -238,7 +238,7 @@ describe OwlBot do
     create_gem_file "lib/bar.rb", "puts 'bar'\n"
     create_gem_file "lib/baz.rb", "puts 'baz'\n"
     create_gem_file ".owlbot.rb", <<~RUBY
-      OwlBot.preserve path: "lib/foo.rb"
+      OwlBot.prevent_overwrite_of_existing "lib/foo.rb"
       OwlBot.modifier path: "lib/bar.rb" do |src|
         src.sub("again", "AGAIN")
       end
@@ -254,8 +254,8 @@ describe OwlBot do
     assert_gem_file "lib/bar.rb", "puts 'bar AGAIN'\n"
     assert_gem_file "lib/baz.rb", "puts 'baz again'\n"
 
-    assert_equal ["lib/bar.rb", "lib/baz.rb"], manifest["generated"]
-    assert_equal [".owlbot.rb", "lib/foo.rb"], manifest["static"]
+    assert_equal ["lib/bar.rb", "lib/baz.rb", "lib/foo.rb"], manifest["generated"]
+    assert_equal [".owlbot.rb"], manifest["static"]
   end
 
   it "omits gitignored files from the static manifest" do
