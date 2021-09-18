@@ -18,6 +18,9 @@ require "fileutils"
 require "json"
 require_relative "version"
 
+##
+# Tools useful for implementing an OwlBot postprocessor.
+#
 module OwlBot
   ##
   # The name of the optional Ruby OwlBot customization script.
@@ -103,7 +106,8 @@ module OwlBot
     attr_reader :script_path
 
     ##
-    # The full path to the manifest file.
+    # The full path to the manifest file. Always set even if the manifest file
+    # is not yet present.
     #
     # @return [String]
     #
@@ -118,8 +122,8 @@ module OwlBot
     attr_reader :previous_generated_files
 
     ##
-    # A list of files that were present in the library but not generated the
-    # last time OwlBot ran.
+    # A list of files that were present in the library but not generated (i.e.
+    # static or handwritten files) the last time OwlBot ran.
     # This will be empty if OwlBot has not run on this library before.
     #
     # @return [Array<String>]
@@ -127,31 +131,22 @@ module OwlBot
     attr_reader :previous_static_files
 
     ##
-    # A list of paths and path regexes that will be preserved during this run.
-    # That is, they will not be overwritten by any newly generated files, nor
-    # will they be deleted if they were previously generated but were not
-    # generated during this run.
-    #
-    # @return [Array<String,Regexp>]
-    #
-    attr_reader :preserved_paths
-
-    ##
     # A list of content modifiers that will be applied while moving files.
+    # See {#modifier}.
     #
     # @return [Array<OwlBot::ContentModifier>]
     #
     attr_reader :content_modifiers
 
     ##
-    # The logger in use
+    # The logger in use.
     #
     # @return [Logger]
     #
     attr_accessor :logger
 
     ##
-    # The version of the Ruby postprocessor
+    # The version of the Ruby postprocessor.
     #
     # @return [String]
     #
@@ -160,35 +155,33 @@ module OwlBot
     end
 
     ##
-    # Add paths and/or regexes identifying files that should be preserved
-    # when {#move_files} is later performed. A preserved file (or directory)
-    # will not be overwritten by newly generated files, nor will it be deleted
-    # if it was previously generated but was not generated during this run.
+    # Add a modifier to the modifier pipeline. This pipeline runs as files are
+    # processed during {#move_files} and provides a way to customize file
+    # handling.
     #
-    # @param path [String,Regexp,Array<String,Regexp>]
+    # As files from the staging directory are processed and reconciled against
+    # the gem directory, every resulting file operation (creation,
+    # modification, and deletion) is passed through the modifier pipeline. That
+    # is, every generated file coming from the staging directory is processed,
+    # _and_ every file that was previously generated (i.e. is in the generated
+    # file list in the manifest) but is not present in staging. Files that are
+    # neither currently nor previously generated are not touched.
     #
-    def preserve path: nil
-      @preserved_paths.concat Array(path)
-      self
-    end
-
-    ##
-    # Add a modifier to the pipeline that runs as files are processed when
-    # {#move_files} is later performed.
+    # When a file is processed, each modifier in the pipeline is applied to it.
+    # First, a modifier determines whether it will activate for that file based
+    # on whether the file matches any of the given paths, which may be strings
+    # or regexes. If no paths are specified, the modifier activates for every
+    # file.
     #
-    # As every file is being moved, each modifier in the pipeline is applied to
-    # it. First, a modifier determines whether it will activate for that file
-    # based on whether the file matches any of the given paths, which may be
-    # strings or regexes. If no paths are specified, the modifier activates for
-    # every file.
-    #
-    # If the modifier is active for a file, the newly generated file, as well
-    # as the existing file (if any) are read, and the two strings plus the file
+    # If the modifier is active for a file, both the newly generated file and
+    # the existing file are read, if present, and the contents plus the file
     # path are passed to the given block: `(new_str, existing_str, path)`. If
-    # no existing file is present, `nil` is passed for `existing_str`. The
-    # block must then return the content to actually use for the moved file.
-    # If additional modifiers are present in the pipeline, the next modifier
-    # will received this returned string as `new_str`.
+    # the new or existing file is not present (i.e. a file being created or
+    # deleted), the corresponding content string is `nil`. The block must then
+    # return the content to actually use for the moved file, or `nil` to
+    # indicate the file should be deleted or not created. This result is then
+    # passed to the next modifier in the pipeline as `new_str`. The final
+    # result controls the handling of the file.
     #
     # @param path [String,Regexp,Array<String,Regexp>] Optional path filter(s)
     #     determining whether this modifier will run. If not present, this
@@ -204,9 +197,88 @@ module OwlBot
     end
 
     ##
+    # A convenience method that removes any modifiers matching the given name
+    # from the modifier pipeline. The name may be a string or a regex. This is
+    # typically used to remove one of the default modifiers installed by
+    # {#install_default_modifiers}.
+    #
+    # @param name [String,Regexp]
+    #
+    def remove_modifiers_named name
+      @content_modifiers.delete_if { |modifier| name === modifier.name }
+      self
+    end
+
+    ##
+    # A convenience method that installs a modifier preserving copyright years
+    # in existing files.
+    #
+    # @param path [String,Regexp,Array<String,Regexp>] Optional path filter(s)
+    #     determining whether this modifier will run. Defaults to
+    #     `[/Rakefile$/, /\.rb$/, /\.gemspec$/, /Gemfile$/]`.
+    # @param name [String] Optional name for the modifier to add. Defaults to
+    #     `"preserve_existing_copyright_years"`.
+    #
+    def preserve_existing_copyright_years path: nil, name: nil
+      path ||= [/Rakefile$/, /\.rb$/, /\.gemspec$/, /Gemfile$/]
+      name ||= "preserve_existing_copyright_years"
+      modifier path: path, name: name do |src, dest|
+        if src && dest
+          copyright_regex = /^# Copyright (\d{4}) Google LLC$/
+          match = copyright_regex.match dest
+          src = src.sub copyright_regex, "# Copyright #{match[1]} Google LLC" if match
+        end
+        src
+      end
+    end
+
+    ##
+    # A convenience method that installs a modifier preventing overwriting of
+    # certain files, if they exist, by newly generated files. This is commonly
+    # used to prevent `CHANGELOG.md` and `version.rb` files from being
+    # overwritten.
+    #
+    # @param path [String,Regexp,Array<String,Regexp>] Path filter(s)
+    #     determining which files are affected. Required.
+    # @param name [String] Optional name for the modifier to add. A default
+    #     will be supplied if omitted.
+    #
+    def prevent_overwrite_of_existing path, name: nil
+      name ||= "prevent_overwrite_of_existing #{path}"
+      modifier path: path, name: name do |src, dest|
+        dest || src
+      end
+    end
+
+    ##
+    # Install the default modifiers. This includes:
+    #
+    # * A modifier named `"preserve_existing_copyright_years"` which ensures
+    #   the copyright year of existing files is not modified.
+    # * A modifier named `"prevent_overwrite_of_existing_changelog_file"` which
+    #   ensures that an existing changelog file is not replaced by the empty
+    #   generated changelog.
+    # * A modifier named `"prevent_overwrite_of_existing_gem_version_file"`
+    #   which ensures that an existing gem version file (`version.rb`) is not
+    #   replaced by the generated file with the initial version.
+    #
+    # This is called automatically for every run. You generally don't need to
+    # call it a second time unless you've cleared the modifier list and need to
+    # reinstall them. However, you can use {#remove_modifiers_named} to remove
+    # the individual defaults if you want to disable or replace them.
+    #
+    def install_default_modifiers
+      preserve_existing_copyright_years
+      prevent_overwrite_of_existing "CHANGELOG.md",
+                                    name: "prevent_overwrite_of_existing_changelog_file"
+      prevent_overwrite_of_existing "lib/#{gem_name.tr '-', '/'}/version.rb",
+                                    name: "prevent_overwrite_of_existing_gem_version_file"
+    end
+
+    ##
     # Move files from the staging directory to the gem directory.
-    # Any customization of the {#preserve} paths or the {#modifier} functions
-    # should be done prior to calling this.
+    # Any customizations such as installing {#modifier} functions should be
+    # done prior to calling this.
     #
     # After this call is complete, the staged files will be moved into the gem
     # directory, the staging directory will be deleted, and the manifest file
@@ -214,7 +286,7 @@ module OwlBot
     #
     def move_files
       copy_dir []
-      ::FileUtils.rm_rf @staging_root_dir
+      ::FileUtils.rm_rf @staging_dir
       write_manifest
       self
     end
@@ -234,7 +306,7 @@ module OwlBot
     def entrypoint logger: nil, gem_name: nil
       setup logger, gem_name
       sanity_check
-      apply_default_config
+      install_default_modifiers
       if script_path
         load script_path
       else
@@ -247,10 +319,9 @@ module OwlBot
 
     def setup logger, gem_name
       @logger = logger
-      @gem_name = gem_name
       @repo_dir = ::Dir.getwd
       @staging_root_dir = ::File.join @repo_dir, STAGING_ROOT_NAME
-      @gem_name ||= find_staged_gem_name @staging_root_dir
+      @gem_name = gem_name || find_staged_gem_name(@staging_root_dir)
       @staging_dir = ::File.join @staging_root_dir, @gem_name
       @gem_dir = ::File.join @repo_dir, @gem_name
       @script_path = find_custom_script gem_dir
@@ -258,7 +329,6 @@ module OwlBot
       @previous_generated_files, @previous_static_files = load_existing_manifest @manifest_path
       @next_generated_files = []
       @next_static_files = []
-      @preserved_paths = []
       @content_modifiers = []
     end
 
@@ -275,7 +345,12 @@ module OwlBot
 
     def load_existing_manifest manifest_path
       if ::File.file? manifest_path
-        manifest = ::JSON.load_file manifest_path
+        manifest = begin
+          ::JSON.load_file manifest_path
+        rescue ::JSON::ParserError
+          logger.warn "Ignoring malformed manifest file"
+          {}
+        end
         [manifest["generated"] || [], manifest["static"] || []]
       else
         [[], []]
@@ -285,18 +360,6 @@ module OwlBot
     def sanity_check
       error "No staging directory #{@staging_dir}" unless ::File.directory? @staging_dir
       error "No gem directory #{@gem_dir}" unless ::File.directory? @gem_dir
-    end
-
-    def apply_default_config
-      preserve path: ["CHANGELOG.md", "lib/#{gem_name.tr '-', '/'}/version.rb"]
-
-      copyright_regex = /^# Copyright (\d{4}) Google LLC$/
-      ruby_patterns = [/Rakefile$/, /\.rb$/, /\.gemspec$/, /Gemfile$/]
-      modifier path: ruby_patterns, name: "copyright year preserver" do |src, dest|
-        match = copyright_regex.match dest
-        src = src.sub copyright_regex, "# Copyright #{match[1]} Google LLC" if match
-        src
-      end
     end
 
     def copy_dir arr
@@ -315,20 +378,16 @@ module OwlBot
 
     def object_removed arr
       path = arr.join "/"
-      if preserved_paths.any? { |pattern| pattern === path }
-        path_info path, "preserved and not deleted"
-        recursively_add_to_next_static path
-        return false
-      end
       dest = ::File.join gem_dir, path
       if ::File.file? dest
         if previous_generated_files.include? path
-          path_info path, "deleted file"
-          ::FileUtils.rm_f dest
-          true
+          !handle_file path
+        elsif gitignored? path
+          path_warning path, "retained existing gitignored file"
+          false
         else
           path_info path, "retained existing non-generated file"
-          recursively_add_to_next_static path
+          @next_static_files << path
           false
         end
       elsif ::File.directory? dest
@@ -347,8 +406,7 @@ module OwlBot
       path = arr.join "/"
       src = ::File.join staging_dir, path
       if ::File.file? src
-        copy_file path
-        @next_generated_files << path
+        handle_file path
       elsif ::File.directory? src
         ::FileUtils.mkdir ::File.join(gem_dir, path)
         ::Dir.children(src).each { |child| object_added arr + [child] }
@@ -357,49 +415,59 @@ module OwlBot
 
     def object_changed arr
       path = arr.join "/"
-      if preserved_paths.any? { |pattern| pattern === path }
-        path_info path, "preserved and not copied"
-        recursively_add_to_next_static path
-        return
-      end
       src = ::File.join staging_dir, path
       dest = ::File.join gem_dir, path
       if ::File.file? src
-        if ::File.directory? dest
-          path_warning path, "removed directory to make way for generated file"
+        if ::File.file? dest
+          if gitignored? path
+            path_warning path, "previously gitignored file being replaced with generated file"
+          elsif !previous_generated_files.empty? && !previous_generated_files.include?(path)
+            path_warning path, "previously static file being replaced with generated file"
+          end
+        else
+          path_warning path, "removed non-file to make way for generated file"
           ::FileUtils.rm_rf dest
         end
-        copy_file path
-        @next_generated_files << path
+        handle_file path
       elsif ::File.directory? src
-        if ::File.file? dest
-          path_warning path, "removed file to make way for generated directory"
+        if ::File.directory? dest
+          copy_dir arr
+        else
+          path_warning path, "removed non-directory to make way for generated directory"
           ::FileUtils.rm_rf dest
           object_added arr
-        elsif ::File.directory? dest
-          copy_dir arr
         end
       end
     end
 
-    def recursively_add_to_next_static path
-      check_ignore_path = ::File.join gem_name, path
-      return unless `git check-ignore #{check_ignore_path}`.empty?
-      full_path = ::File.join gem_dir, path
-      if ::File.file? full_path
-        @next_static_files << path
-      elsif ::File.directory? full_path
-        ::Dir.children(full_path).each do |child|
-          recursively_add_to_next_static ::File.join(path, child)
-        end
-      end
-    end
-
-    def copy_file path
+    def handle_file path
       src = ::File.join staging_dir, path
       dest = ::File.join gem_dir, path
-      content = src_content = ::File.read(src).freeze
+      src_content = ::File.file?(src) ? ::File.read(src).freeze : nil
       dest_content = ::File.file?(dest) ? ::File.read(dest).freeze : nil
+      content = apply_modifiers path, src_content, dest_content
+      if content.nil?
+        if dest_content.nil?
+          path_info path, "new staged file removed"
+        else
+          ::FileUtils.rm_f dest
+          path_info path, "deleted existing file"
+        end
+      else
+        label = content == src_content ? "" : " with modifications"
+        if content == dest_content
+          path_info path, "staged file#{label} identical to existing file"
+        else
+          ::FileUtils.cp src, dest
+          ::File.open(dest, "w") { |file| file.write content } unless content == src_content
+          path_info path, "moved staged file#{label}"
+        end
+        (src_content ? @next_generated_files : @next_static_files) << path
+      end
+      !content.nil?
+    end
+
+    def apply_modifiers path, content, dest_content
       content_modifiers.each do |modifier|
         next_content = modifier.call content.dup, dest_content, path
         if next_content != content
@@ -407,14 +475,11 @@ module OwlBot
           content = next_content
         end
       end
-      label = content == src_content ? "" : " with modifications"
-      if content == dest_content
-        path_info path, "staged file#{label} identical to existing file"
-      else
-        ::FileUtils.cp src, dest
-        ::File.open(dest, "w") { |file| file.write content } unless content == src_content
-        path_info path, "copied staged file#{label}"
-      end
+      content
+    end
+
+    def gitignored? path
+      !`git check-ignore #{::File.join gem_name, path}`.empty?
     end
 
     def write_manifest

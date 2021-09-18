@@ -59,16 +59,17 @@ copying files from the staging directory, and making any desired changes.
 
 For this purpose, the `.owlbot.rb` file will have access to the `OwlBot` module
 which provides useful methods for implementing postprocessing functionality.
-In general, usage of this module involves first configuring various filters and
-content manipulation routines, and then finally calling `OwlBot.move_files`
-which performs the file copying subject to that configuration.
+In general, usage of this module involves first configuring a pipeline of
+_modifiers_ which affect how generated files are handled as they are moved from
+the staging directory, and then finally calling `OwlBot.move_files` which
+performs the file copying subject to that configuration.
 
 Following is an example `.owlbot.rb` file:
 
 ```ruby
 # .owlbot.rb
 
-# Install a content modifier that renames a particular class in all Ruby files
+# Install a modifier that renames a particular class in all Ruby files
 OwlBot.modifier path: %r{^lib/.*\.rb$} do |content|
   content.gsub "BadlyNamedClass", "BetterName"
 end
@@ -93,15 +94,15 @@ OwlBot.move_files
 ```
 
 As a result, if you want to override/disable the default behavior, you will
-need to remove the existing configurations. For example:
+need to remove the existing modifiers from the pipeline. For example:
 
 ```ruby
 # .owlbot.rb
 
 # The changelog is named differently in this library, so remove the default
-# from the preserved paths and add the new one.
-OwlBot.preserved_paths.delete "CHANGELOG.md"
-OwlBot.preserve path: "HISTORY.md"
+# modifier and install a different one.
+OwlBot.remove_modifiers_named "prevent_overwrite_of_existing_changelog_file"
+OwlBot.prevent_overwrite_of_existing "HISTORY.md"
 
 OwlBot.move_files
 ```
