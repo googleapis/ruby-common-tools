@@ -48,14 +48,22 @@ module OwlBot
   # files can be combined, and/or additional changes/substitutions can be made.
   #
   class ContentModifier
+    ##
+    # The name given to this modifier. May be the empty string if the modifier
+    # was not given a name.
+    #
+    # @return [String]
+    #
+    attr_reader :name
+
+    # @private
     def initialize patterns, block, name
       @patterns = Array(patterns || //)
       @block = block
-      @name = name || "(unnamed)"
+      @name = name.to_s
     end
 
-    attr_reader :name
-
+    # @private
     def call src, dest, path
       return src unless @patterns.any? { |pattern| pattern === path }
       @block.call src, dest, path
@@ -495,7 +503,7 @@ module OwlBot
         "static" => @next_static_files.sort
       }
       ::File.open manifest_path, "w" do |file|
-        file.write ::JSON.pretty_generate manifest
+        file.puts ::JSON.pretty_generate manifest
       end
     end
 
