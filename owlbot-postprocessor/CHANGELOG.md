@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.2.2](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.1...owlbot-postprocessor/v0.2.2) (2021-09-18)
+
+
+### Bug Fixes
+
+* Ensure manifest files end with a newline ([96cfa79](https://www.github.com/googleapis/ruby-common-tools/commit/96cfa7983c17f32bfdfddf23344bed5b44f1bd9c))
+
 ## [0.2.1](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.0...owlbot-postprocessor/v0.2.1) (2021-09-18)
 
 * Exclude the owlbot manifest file itself from its static file list ([4566430](https://www.github.com/googleapis/ruby-common-tools/commit/456643013b4025adb569edf63f69249fca9eaa10))
