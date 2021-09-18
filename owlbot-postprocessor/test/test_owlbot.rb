@@ -90,19 +90,6 @@ describe OwlBot do
     end
   end
 
-  def invoke_image *args
-    cmd = [
-      "docker", "run",
-      "--rm",
-      "--user", "#{::Process.uid}:#{::Process.gid}",
-      "-v", "#{repo_dir}:/repo",
-      "-w", "/repo",
-      image_name,
-      "-qq"
-    ] + args
-    assert system cmd.join(" ")
-  end
-
   it "copies files into an empty gem dir" do
     create_staging_file "hello.txt", "hello world\n"
     create_staging_file "lib/hello.rb", "puts 'hello'\n"
@@ -159,7 +146,7 @@ describe OwlBot do
     assert_equal 3, paths.size # Two files and one directory
 
     assert_equal ["hello.txt", "lib/hello.rb"], manifest["generated"]
-    assert_equal [manifest_file_name], manifest["static"]
+    assert_equal [], manifest["static"]
   end
 
   it "preserves changelog and version files when copying" do
@@ -196,7 +183,7 @@ describe OwlBot do
     assert_gem_file "lib/bar/hello.rb", "puts 'hello2'\n"
 
     assert_equal [], manifest["generated"]
-    assert_equal [manifest_file_name, "CHANGELOG.md", "lib/bar/hello.rb", "lib/my/gem/version.rb"], manifest["static"]
+    assert_equal ["CHANGELOG.md", "lib/bar/hello.rb", "lib/my/gem/version.rb"], manifest["static"]
   end
 
   it "preserves copyright year of Ruby files" do
@@ -299,33 +286,48 @@ describe OwlBot do
     assert_gem_file "hello.txt", "hello world\n", gem: "another-gem"
   end
 
-  it "copies files using the image" do
-    create_gem_file "static.txt", "here before\n"
-    create_staging_file "hello.txt", "hello world\n"
-    create_staging_file "lib/hello.rb", "puts 'hello'\n"
+  describe "using the image" do
+    def invoke_image *args
+      cmd = [
+        "docker", "run",
+        "--rm",
+        "--user", "#{::Process.uid}:#{::Process.gid}",
+        "-v", "#{repo_dir}:/repo",
+        "-w", "/repo",
+        image_name,
+        "-qq"
+      ] + args
+      assert system cmd.join(" ")
+    end
 
-    invoke_image
+    it "copies files using the image" do
+      create_gem_file "static.txt", "here before\n"
+      create_staging_file "hello.txt", "hello world\n"
+      create_staging_file "lib/hello.rb", "puts 'hello'\n"
 
-    assert_gem_file "hello.txt", "hello world\n"
-    assert_gem_file "lib/hello.rb", "puts 'hello'\n"
-    assert_gem_file "static.txt", "here before\n"
+      invoke_image
 
-    paths = ::Dir.glob "**/*", base: gem_dir
-    assert_equal 4, paths.size # Three files and one directory
+      assert_gem_file "hello.txt", "hello world\n"
+      assert_gem_file "lib/hello.rb", "puts 'hello'\n"
+      assert_gem_file "static.txt", "here before\n"
 
-    assert_equal ["hello.txt", "lib/hello.rb"], manifest["generated"]
-    assert_equal ["static.txt"], manifest["static"]
-  end
+      paths = ::Dir.glob "**/*", base: gem_dir
+      assert_equal 4, paths.size # Three files and one directory
 
-  it "supports selecting a specific gem using the image" do
-    create_gem_file "hello.txt", "hello world\n"
-    create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
-    create_staging_file "hello.txt", "hello again\n"
-    create_staging_file "hello.txt", "hello again\n", gem: "another-gem"
+      assert_equal ["hello.txt", "lib/hello.rb"], manifest["generated"]
+      assert_equal ["static.txt"], manifest["static"]
+    end
 
-    invoke_image "--gem=another-gem"
+    it "supports selecting a specific gem using the image" do
+      create_gem_file "hello.txt", "hello world\n"
+      create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
+      create_staging_file "hello.txt", "hello again\n"
+      create_staging_file "hello.txt", "hello again\n", gem: "another-gem"
 
-    assert_gem_file "hello.txt", "hello world\n"
-    assert_gem_file "hello.txt", "hello again\n", gem: "another-gem"
+      invoke_image "--gem=another-gem"
+
+      assert_gem_file "hello.txt", "hello world\n"
+      assert_gem_file "hello.txt", "hello again\n", gem: "another-gem"
+    end
   end
 end
