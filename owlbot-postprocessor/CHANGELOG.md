@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.2.1](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.0...owlbot-postprocessor/v0.2.1) (2021-09-18)
+
+
+### Bug Fixes
+
+* Exclude the owlbot manifest file itself from its static file list ([4566430](https://www.github.com/googleapis/ruby-common-tools/commit/456643013b4025adb569edf63f69249fca9eaa10))
+
 ## [0.2.0](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.1.4...owlbot-postprocessor/v0.2.0) (2021-09-18)
 
 * BREAKING CHANGE: Removed preserved paths and reimplemented changelog/version preservation using modifiers. Changelog/version files no longer switch from generated to static in the manifest. ([e79233c](https://www.github.com/googleapis/ruby-common-tools/commit/e79233cdd086e270a6a4068aea2755b558eea4d0))
