@@ -385,6 +385,9 @@ module OwlBot
         elsif gitignored? path
           path_warning path, "retained existing gitignored file"
           false
+        elsif path == MANIFEST_NAME
+          path_info path, "retained manifest"
+          false
         else
           path_info path, "retained existing non-generated file"
           @next_static_files << path
@@ -415,6 +418,10 @@ module OwlBot
 
     def object_changed arr
       path = arr.join "/"
+      if path == MANIFEST_NAME
+        path_warning path, "prevented generated file from overwriting the manifest"
+        return
+      end
       src = ::File.join staging_dir, path
       dest = ::File.join gem_dir, path
       if ::File.file? src
