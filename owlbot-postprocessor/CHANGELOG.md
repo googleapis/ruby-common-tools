@@ -1,9 +1,6 @@
 # Changelog
 
-### [0.2.3](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.2...owlbot-postprocessor/v0.2.3) (2021-09-20)
-
-
-### Bug Fixes
+## [0.2.3](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.2...owlbot-postprocessor/v0.2.3) (2021-09-20)
 
 * Improve error messages for unexpected staging directory structure ([2b50ee8](https://www.github.com/googleapis/ruby-common-tools/commit/2b50ee8861d29e3a4ed04e1bb6a54a68c5b667bf))
 * Support owlbot runs that modify multiple gems ([1817085](https://www.github.com/googleapis/ruby-common-tools/commit/181708544f7e676b6e0bc1e7785c378a879a7cde))
