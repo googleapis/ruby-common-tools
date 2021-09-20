@@ -5,11 +5,11 @@ Metrics/BlockLength:
   Exclude:
     - "owlbot-postprocessor/test/test_*.rb"
 Metrics/ClassLength:
-  Max: 250
+  Max: 300
 Metrics/MethodLength:
   Max: 30
 Metrics/ModuleLength:
-  Max: 250
+  Max: 300
 Metrics/PerceivedComplexity:
   Max: 15
 Style/Documentation:

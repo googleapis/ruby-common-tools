@@ -263,17 +263,6 @@ describe OwlBot do
     assert_equal [".gitignore", "static.txt"], manifest["static"]
   end
 
-  it "errors if there are multiple staging directories and no explicit gem" do
-    create_gem_file "hello.txt", "hello world\n"
-    create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
-    create_staging_file "hello.txt", "hello again\n"
-    create_staging_file "hello.txt", "hello again\n", gem: "another-gem"
-
-    assert_raises OwlBot::Error do
-      invoke_owlbot
-    end
-  end
-
   it "supports selecting a specific gem" do
     create_gem_file "hello.txt", "hello world\n"
     create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
@@ -284,6 +273,36 @@ describe OwlBot do
 
     assert_gem_file "hello.txt", "hello again\n"
     assert_gem_file "hello.txt", "hello world\n", gem: "another-gem"
+  end
+
+  it "errors if there are multiple staging directories and no explicit gem" do
+    create_gem_file "hello.txt", "hello world\n"
+    create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
+    create_staging_file "hello.txt", "hello again\n"
+    create_staging_file "hello.txt", "hello again\n", gem: "another-gem"
+
+    error = assert_raises OwlBot::Error do
+      invoke_owlbot
+    end
+    assert_includes error.message, "there are multiple staging dirs"
+  end
+
+  it "errors if there is no staging root dir" do
+    ::FileUtils.rm_rf staging_root_dir
+
+    error = assert_raises OwlBot::Error do
+      invoke_owlbot
+    end
+    assert_includes error.message, "No staging root dir"
+  end
+
+  it "errors if there are no staging directories under the staging root" do
+    ::FileUtils.rm_rf staging_dir
+
+    error = assert_raises OwlBot::Error do
+      invoke_owlbot
+    end
+    assert_includes error.message, "No staging dirs under"
   end
 
   describe "using the image" do

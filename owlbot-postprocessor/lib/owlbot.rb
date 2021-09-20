@@ -294,7 +294,7 @@ module OwlBot
     #
     def move_files
       copy_dir []
-      ::FileUtils.rm_rf @staging_dir
+      ::FileUtils.rm_rf staging_dir
       write_manifest
       self
     end
@@ -341,8 +341,12 @@ module OwlBot
     end
 
     def find_staged_gem_name staging_root_dir
+      error "No staging root dir #{staging_root_dir}" unless ::File.directory? staging_root_dir
       staging_dirs = ::Dir.children staging_root_dir
-      error "Unexpected staging dirs: #{staging_dirs.inspect}" unless staging_dirs.size == 1
+      error "No staging dirs under #{staging_root_dir}" if staging_dirs.empty?
+      if staging_dirs.size > 1
+        error "You need to specify which gem to postprocess because there are multiple staging dirs: #{staging_dirs}"
+      end
       staging_dirs.first
     end
 
@@ -366,8 +370,8 @@ module OwlBot
     end
 
     def sanity_check
-      error "No staging directory #{@staging_dir}" unless ::File.directory? @staging_dir
-      error "No gem directory #{@gem_dir}" unless ::File.directory? @gem_dir
+      error "No staging directory #{staging_dir}" unless ::File.directory? staging_dir
+      error "No gem directory #{gem_dir}" unless ::File.directory? gem_dir
     end
 
     def copy_dir arr
