@@ -90,6 +90,12 @@ describe OwlBot do
     end
   end
 
+  def invoke_owlbot_multi
+    ::Dir.chdir repo_dir do
+      OwlBot.multi_entrypoint
+    end
+  end
+
   it "copies files into an empty gem dir" do
     create_staging_file "hello.txt", "hello world\n"
     create_staging_file "lib/hello.rb", "puts 'hello'\n"
@@ -275,6 +281,30 @@ describe OwlBot do
     assert_gem_file "hello.txt", "hello world\n", gem: "another-gem"
   end
 
+  it "runs multiple gems" do
+    create_gem_file "lib/foo.rb", "puts 'hello'\n", gem: "gem1"
+    create_gem_file ".owlbot.rb", <<~RUBY, gem: "gem1"
+      OwlBot.modifier path: "lib/foo.rb" do |src|
+        src.sub("foo", "bar")
+      end
+      OwlBot.move_files
+    RUBY
+    create_gem_file "lib/foo.rb", "puts 'hello'\n", gem: "gem2"
+    create_gem_file ".owlbot.rb", <<~RUBY, gem: "gem2"
+      OwlBot.modifier path: "lib/foo.rb" do |src|
+        src.sub("foo", "baz")
+      end
+      OwlBot.move_files
+    RUBY
+    create_staging_file "lib/foo.rb", "puts 'foo'\n", gem: "gem1"
+    create_staging_file "lib/foo.rb", "puts 'foo'\n", gem: "gem2"
+
+    invoke_owlbot_multi
+
+    assert_gem_file "lib/foo.rb", "puts 'bar'\n", gem: "gem1"
+    assert_gem_file "lib/foo.rb", "puts 'baz'\n", gem: "gem2"
+  end
+
   it "errors if there are multiple staging directories and no explicit gem" do
     create_gem_file "hello.txt", "hello world\n"
     create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
@@ -347,6 +377,30 @@ describe OwlBot do
 
       assert_gem_file "hello.txt", "hello world\n"
       assert_gem_file "hello.txt", "hello again\n", gem: "another-gem"
+    end
+
+    it "supports multiple gems" do
+      create_gem_file "lib/foo.rb", "puts 'hello'\n", gem: "gem1"
+      create_gem_file ".owlbot.rb", <<~RUBY, gem: "gem1"
+        OwlBot.modifier path: "lib/foo.rb" do |src|
+          src.sub("foo", "bar")
+        end
+        OwlBot.move_files
+      RUBY
+      create_gem_file "lib/foo.rb", "puts 'hello'\n", gem: "gem2"
+      create_gem_file ".owlbot.rb", <<~RUBY, gem: "gem2"
+        OwlBot.modifier path: "lib/foo.rb" do |src|
+          src.sub("foo", "baz")
+        end
+        OwlBot.move_files
+      RUBY
+      create_staging_file "lib/foo.rb", "puts 'foo'\n", gem: "gem1"
+      create_staging_file "lib/foo.rb", "puts 'foo'\n", gem: "gem2"
+
+      invoke_image
+
+      assert_gem_file "lib/foo.rb", "puts 'bar'\n", gem: "gem1"
+      assert_gem_file "lib/foo.rb", "puts 'baz'\n", gem: "gem2"
     end
   end
 end

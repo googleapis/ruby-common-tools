@@ -26,7 +26,11 @@ cli.add_config_block do
   flag :gem_name, "--gem=NAME"
 
   def run
-    OwlBot.entrypoint gem_name: gem_name, logger: logger
+    if gem_name
+      OwlBot.entrypoint gem_name: gem_name, logger: logger
+    else
+      OwlBot.multi_entrypoint logger: logger
+    end
   rescue OwlBot::Error => e
     logger.error e.message
     exit 1
