@@ -1,5 +1,13 @@
 # Changelog
 
+### [0.2.3](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.2...owlbot-postprocessor/v0.2.3) (2021-09-20)
+
+
+### Bug Fixes
+
+* Improve error messages for unexpected staging directory structure ([2b50ee8](https://www.github.com/googleapis/ruby-common-tools/commit/2b50ee8861d29e3a4ed04e1bb6a54a68c5b667bf))
+* Support owlbot runs that modify multiple gems ([1817085](https://www.github.com/googleapis/ruby-common-tools/commit/181708544f7e676b6e0bc1e7785c378a879a7cde))
+
 ## [0.2.2](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.1...owlbot-postprocessor/v0.2.2) (2021-09-18)
 
 * Ensure manifest files end with a newline ([96cfa79](https://www.github.com/googleapis/ruby-common-tools/commit/96cfa7983c17f32bfdfddf23344bed5b44f1bd9c))
