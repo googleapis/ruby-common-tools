@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.2.4](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.3...owlbot-postprocessor/v0.2.4) (2021-09-20)
+
+
+### Bug Fixes
+
+* Allow the postprocessor image to do nothing ([cc927d0](https://www.github.com/googleapis/ruby-common-tools/commit/cc927d0287a8fcb307c461b7c8f434f91cafbffa))
+
 ## [0.2.3](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.2...owlbot-postprocessor/v0.2.3) (2021-09-20)
 
 * Improve error messages for unexpected staging directory structure ([2b50ee8](https://www.github.com/googleapis/ruby-common-tools/commit/2b50ee8861d29e3a4ed04e1bb6a54a68c5b667bf))
