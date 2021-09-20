@@ -402,5 +402,11 @@ describe OwlBot do
       assert_gem_file "lib/foo.rb", "puts 'bar'\n", gem: "gem1"
       assert_gem_file "lib/foo.rb", "puts 'baz'\n", gem: "gem2"
     end
+
+    it "does not fail if there is no staging root dir" do
+      ::FileUtils.rm_rf staging_root_dir
+
+      invoke_image
+    end
   end
 end
