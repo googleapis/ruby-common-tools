@@ -323,6 +323,17 @@ module OwlBot
       self
     end
 
+    # @private
+    def multi_entrypoint logger: nil
+      error "No staging root dir #{STAGING_ROOT_NAME}" unless ::File.directory? STAGING_ROOT_NAME
+      children = ::Dir.children STAGING_ROOT_NAME
+      error "No staging dirs under #{STAGING_ROOT_NAME}" if children.empty?
+      logger&.info "Multi-entrypoint found staging directories: #{children}"
+      children.each do |child|
+        entrypoint logger: logger, gem_name: child
+      end
+    end
+
     private
 
     def setup logger, gem_name
@@ -342,12 +353,12 @@ module OwlBot
 
     def find_staged_gem_name staging_root_dir
       error "No staging root dir #{staging_root_dir}" unless ::File.directory? staging_root_dir
-      staging_dirs = ::Dir.children staging_root_dir
-      error "No staging dirs under #{staging_root_dir}" if staging_dirs.empty?
-      if staging_dirs.size > 1
-        error "You need to specify which gem to postprocess because there are multiple staging dirs: #{staging_dirs}"
+      children = ::Dir.children staging_root_dir
+      error "No staging dirs under #{staging_root_dir}" if children.empty?
+      if children.size > 1
+        error "You need to specify which gem to postprocess because there are multiple staging dirs: #{children}"
       end
-      staging_dirs.first
+      children.first
     end
 
     def find_custom_script gem_dir
@@ -372,6 +383,9 @@ module OwlBot
     def sanity_check
       error "No staging directory #{staging_dir}" unless ::File.directory? staging_dir
       error "No gem directory #{gem_dir}" unless ::File.directory? gem_dir
+      logger&.info "Processing #{gem_name}"
+      logger&.info "Moving from #{staging_dir} to #{gem_dir}"
+      logger&.info "Using custom script #{script_path}" if script_path
     end
 
     def copy_dir arr

@@ -16,21 +16,20 @@ can also optionally customize the postprocessor by providing Ruby code.
 
 To configure a Ruby GAPIC client for OwlBot, create a `.OwlBot.yaml` file in
 the library directory. It _must_ instruct OwlBot to copy the newly generated
-library code into the directory `/owl-bot-staging/$GEM_NAME` in the repo. It
-also _should_ specify the Ruby postprocessor Docker image
-`gcr.io/cloud-devrel-public-resources/owlbot-ruby:latest` (unless a global
-`/.github/.OwlBot.yaml` file already does so).
+library code into the directory `/owl-bot-staging/$GEM_NAME` in the repo, and
+it _should_ specify the Ruby postprocessor Docker image
+`gcr.io/cloud-devrel-public-resources/owlbot-ruby:latest`.
 
 Here is an example OwlBot config:
 
 ```yaml
 # /google-cloud-access_approval-v1/.OwlBot.yaml
 
+deep-copy-regex:
+  - source: /google/cloud/accessapproval/v1/[^/]+-ruby/(.*)
+    dest: /owl-bot-staging/google-cloud-access_approval-v1/$1
 docker:
   image: gcr.io/cloud-devrel-public-resources/owlbot-ruby:latest
-deep-copy-regex:
-  - source: /google/cloud/accessapproval/v1/google-cloud-accessapproval-v1-ruby/(.*)
-    dest: /owl-bot-staging/google-cloud-access_approval-v1/$1
 ```
 
 This postprocessor will then, by default:
@@ -62,7 +61,9 @@ which provides useful methods for implementing postprocessing functionality.
 In general, usage of this module involves first configuring a pipeline of
 _modifiers_ which affect how generated files are handled as they are moved from
 the staging directory, and then finally calling `OwlBot.move_files` which
-performs the file copying subject to that configuration.
+performs the file copying subject to that configuration. You can also perform
+other file system operations such as creating, modifying, and deleting files,
+both before and after the `OwlBot.move_files` call.
 
 Following is an example `.owlbot.rb` file:
 
@@ -94,7 +95,14 @@ OwlBot.move_files
 ```
 
 As a result, if you want to override/disable the default behavior, you will
-need to remove the existing modifiers from the pipeline. For example:
+need to remove the existing modifiers from the pipeline. The existing default
+modifiers are named:
+
+* `preserve_existing_copyright_years`
+* `prevent_overwrite_of_existing_changelog_file`
+* `prevent_overwrite_of_existing_gem_version_file`
+
+For example:
 
 ```ruby
 # .owlbot.rb
