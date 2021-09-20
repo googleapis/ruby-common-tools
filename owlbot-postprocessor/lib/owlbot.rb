@@ -325,13 +325,20 @@ module OwlBot
 
     # @private
     def multi_entrypoint logger: nil
-      error "No staging root dir #{STAGING_ROOT_NAME}" unless ::File.directory? STAGING_ROOT_NAME
+      unless ::File.directory? STAGING_ROOT_NAME
+        logger&.warn "No staging root dir #{STAGING_ROOT_NAME}. Nothing for the Ruby postprocessor to do."
+        return self
+      end
       children = ::Dir.children STAGING_ROOT_NAME
-      error "No staging dirs under #{STAGING_ROOT_NAME}" if children.empty?
+      if children.empty?
+        logger&.warn "No staging dirs under #{STAGING_ROOT_NAME}. Nothing for the Ruby postprocessor to do."
+        return self
+      end
       logger&.info "Multi-entrypoint found staging directories: #{children}"
       children.each do |child|
         entrypoint logger: logger, gem_name: child
       end
+      self
     end
 
     private
