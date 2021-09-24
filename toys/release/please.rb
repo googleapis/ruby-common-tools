@@ -112,7 +112,7 @@ def interpret_input_packages
           logger.error "Found multiple gemspecs for gem #{name} in the repo"
           exit 1
         else
-          paths.first
+          File.dirname paths.first
         end
       end
     [name, version, path]
