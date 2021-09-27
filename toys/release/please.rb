@@ -141,6 +141,7 @@ def release_please package_name, release_as, dir
     break if cur_retries <= 0
     sleep cur_retry_delay
     logger.warn "Retrying..."
+    error_msg = nil
     cur_retries -= 1
     cur_retry_delay *= 2
   end
