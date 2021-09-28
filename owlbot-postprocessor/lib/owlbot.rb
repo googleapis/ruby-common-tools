@@ -82,7 +82,9 @@ module OwlBot
     #
     # @return [String]
     #
-    attr_reader :repo_dir
+    def repo_dir
+      @impl.repo_dir
+    end
 
     ##
     # The full path to the staging directory where OwlBot has staged the
@@ -90,28 +92,36 @@ module OwlBot
     #
     # @return [String]
     #
-    attr_reader :staging_dir
+    def staging_dir
+      @impl.staging_dir
+    end
 
     ##
     # The name of the gem.
     #
     # @return [String]
     #
-    attr_reader :gem_name
+    def gem_name
+      @impl.gem_name
+    end
 
     ##
     # The full path to the gem directory, i.e. the "destination" directory.
     #
     # @return [String]
     #
-    attr_reader :gem_dir
+    def gem_dir
+      @impl.gem_dir
+    end
 
     ##
     # The full path to the script file, if present; otherwise `nil`.
     #
     # @return [String,nil]
     #
-    attr_reader :script_path
+    def script_path
+      @impl.script_path
+    end
 
     ##
     # The full path to the manifest file. Always set even if the manifest file
@@ -119,7 +129,9 @@ module OwlBot
     #
     # @return [String]
     #
-    attr_reader :manifest_path
+    def manifest_path
+      @impl.manifest_path
+    end
 
     ##
     # A list of files that were generated the last time OwlBot ran.
@@ -127,7 +139,9 @@ module OwlBot
     #
     # @return [Array<String>]
     #
-    attr_reader :previous_generated_files
+    def previous_generated_files
+      @impl.previous_generated_files
+    end
 
     ##
     # A list of files that were present in the library but not generated (i.e.
@@ -136,7 +150,9 @@ module OwlBot
     #
     # @return [Array<String>]
     #
-    attr_reader :previous_static_files
+    def previous_static_files
+      @impl.previous_static_files
+    end
 
     ##
     # A list of content modifiers that will be applied while moving files.
@@ -144,14 +160,27 @@ module OwlBot
     #
     # @return [Array<OwlBot::ContentModifier>]
     #
-    attr_reader :content_modifiers
+    def content_modifiers
+      @impl.content_modifiers
+    end
 
     ##
     # The logger in use.
     #
     # @return [Logger]
     #
-    attr_accessor :logger
+    def logger
+      @impl.logger
+    end
+
+    ##
+    # Set the logger.
+    #
+    # @param [Logger] new_logger
+    #
+    def logger= new_logger
+      @impl.logger = new_logger
+    end
 
     ##
     # The version of the Ruby postprocessor.
@@ -200,7 +229,7 @@ module OwlBot
     #     arguments: `(new_str, existing_str, path)`.
     #
     def modifier path: nil, name: nil, &block
-      @content_modifiers << ContentModifier.new(path, block, name)
+      @impl.content_modifiers << ContentModifier.new(path, block, name)
       self
     end
 
@@ -213,7 +242,7 @@ module OwlBot
     # @param name [String,Regexp]
     #
     def remove_modifiers_named name
-      @content_modifiers.delete_if { |modifier| name === modifier.name }
+      @impl.content_modifiers.delete_if { |modifier| name === modifier.name }
       self
     end
 
@@ -279,7 +308,7 @@ module OwlBot
       preserve_existing_copyright_years
       prevent_overwrite_of_existing "CHANGELOG.md",
                                     name: "prevent_overwrite_of_existing_changelog_file"
-      prevent_overwrite_of_existing "lib/#{gem_name.tr '-', '/'}/version.rb",
+      prevent_overwrite_of_existing "lib/#{@impl.gem_name.tr '-', '/'}/version.rb",
                                     name: "prevent_overwrite_of_existing_gem_version_file"
     end
 
@@ -293,9 +322,7 @@ module OwlBot
     # will be written.
     #
     def move_files
-      copy_dir []
-      ::FileUtils.rm_rf staging_dir
-      write_manifest
+      @impl.do_move
       self
     end
 
@@ -305,20 +332,20 @@ module OwlBot
     # @param message [String]
     #
     def error message
-      raise Error, message
+      @impl.error message
     end
 
     # ---- Private implementation below this point ----
 
     # @private
     def entrypoint logger: nil, gem_name: nil
-      setup logger, gem_name
-      sanity_check
+      @impl = Impl.new logger, gem_name
+      @impl.sanity_check
       install_default_modifiers
-      if script_path
-        load script_path
+      if @impl.script_path
+        load @impl.script_path
       else
-        move_files
+        @impl.do_move
       end
       self
     end
@@ -340,10 +367,11 @@ module OwlBot
       end
       self
     end
+  end
 
-    private
-
-    def setup logger, gem_name
+  # @private
+  class Impl
+    def initialize logger, gem_name
       @logger = logger
       @repo_dir = ::Dir.getwd
       @staging_root_dir = ::File.join @repo_dir, STAGING_ROOT_NAME
@@ -357,6 +385,33 @@ module OwlBot
       @next_static_files = []
       @content_modifiers = []
     end
+
+    attr_reader :repo_dir
+    attr_reader :staging_dir
+    attr_reader :gem_name
+    attr_reader :gem_dir
+    attr_reader :script_path
+    attr_reader :manifest_path
+    attr_reader :previous_generated_files
+    attr_reader :previous_static_files
+    attr_reader :content_modifiers
+    attr_accessor :logger
+
+    def sanity_check
+      error "No staging directory #{staging_dir}" unless ::File.directory? staging_dir
+      error "No gem directory #{gem_dir}" unless ::File.directory? gem_dir
+      logger&.info "Processing #{gem_name}"
+      logger&.info "Moving from #{staging_dir} to #{gem_dir}"
+      logger&.info "Using custom script #{script_path}" if script_path
+    end
+
+    def do_move
+      copy_dir []
+      ::FileUtils.rm_rf staging_dir
+      write_manifest
+    end
+
+    private
 
     def find_staged_gem_name staging_root_dir
       error "No staging root dir #{staging_root_dir}" unless ::File.directory? staging_root_dir
@@ -385,14 +440,6 @@ module OwlBot
       else
         [[], []]
       end
-    end
-
-    def sanity_check
-      error "No staging directory #{staging_dir}" unless ::File.directory? staging_dir
-      error "No gem directory #{gem_dir}" unless ::File.directory? gem_dir
-      logger&.info "Processing #{gem_name}"
-      logger&.info "Moving from #{staging_dir} to #{gem_dir}"
-      logger&.info "Using custom script #{script_path}" if script_path
     end
 
     def copy_dir arr
@@ -530,6 +577,10 @@ module OwlBot
       ::File.open manifest_path, "w" do |file|
         file.puts ::JSON.pretty_generate manifest
       end
+    end
+
+    def error message
+      raise Error, message
     end
 
     def path_info path, str
