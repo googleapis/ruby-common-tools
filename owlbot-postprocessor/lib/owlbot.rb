@@ -155,8 +155,37 @@ module OwlBot
     end
 
     ##
+    # A list of files that were generated during the current OwlBot run.
+    #
+    # Normally this is populated by the call to {OwlBot.move_files}, and
+    # generally you should not modify this array. If you need to update the
+    # manifest because you changed things after {OwlBot.move_files} was called,
+    # use {OwlBot.update_manifest}.
+    #
+    # @return [Array<String>]
+    #
+    def next_generated_files
+      @impl.next_generated_files
+    end
+
+    ##
+    # A list of files that were present in the library but not generated (i.e.
+    # static or handwritten files) during the current OwlBot run.
+    #
+    # Normally this is populated by the call to {OwlBot.move_files}, and
+    # generally you should not modify this array. If you need to update the
+    # manifest because you changed things after {OwlBot.move_files} was called,
+    # use {OwlBot.update_manifest}.
+    #
+    # @return [Array<String>]
+    #
+    def next_static_files
+      @impl.next_static_files
+    end
+
+    ##
     # A list of content modifiers that will be applied while moving files.
-    # See {#modifier}.
+    # See {OwlBot.modifier}.
     #
     # @return [Array<OwlBot::ContentModifier>]
     #
@@ -193,7 +222,7 @@ module OwlBot
 
     ##
     # Add a modifier to the modifier pipeline. This pipeline runs as files are
-    # processed during {#move_files} and provides a way to customize file
+    # processed during {OwlBot.move_files} and provides a way to customize file
     # handling.
     #
     # As files from the staging directory are processed and reconciled against
@@ -224,7 +253,7 @@ module OwlBot
     #     determining whether this modifier will run. If not present, this
     #     modifier will run for all paths.
     # @param name [String] Optional name for this modifier, identifying it in
-    #     the list of objects returned from {#content_modifiers}.
+    #     the list of objects returned from {OwlBot.content_modifiers}.
     # @param block [Proc] The modifier itself, which should take up to three
     #     arguments: `(new_str, existing_str, path)`.
     #
@@ -237,7 +266,7 @@ module OwlBot
     # A convenience method that removes any modifiers matching the given name
     # from the modifier pipeline. The name may be a string or a regex. This is
     # typically used to remove one of the default modifiers installed by
-    # {#install_default_modifiers}.
+    # {OwlBot.install_default_modifiers}.
     #
     # @param name [String,Regexp]
     #
@@ -301,8 +330,8 @@ module OwlBot
     #
     # This is called automatically for every run. You generally don't need to
     # call it a second time unless you've cleared the modifier list and need to
-    # reinstall them. However, you can use {#remove_modifiers_named} to remove
-    # the individual defaults if you want to disable or replace them.
+    # reinstall them. However, you can use {OwlBot.remove_modifiers_named} to
+    # remove the individual defaults if you want to disable or replace them.
     #
     def install_default_modifiers
       preserve_existing_copyright_years
@@ -314,12 +343,14 @@ module OwlBot
 
     ##
     # Move files from the staging directory to the gem directory.
-    # Any customizations such as installing {#modifier} functions should be
-    # done prior to calling this.
+    # Any customizations such as installing {OwlBot.modifier} functions should
+    # be done prior to calling this.
     #
     # After this call is complete, the staged files will be moved into the gem
-    # directory, the staging directory will be deleted, and the manifest file
-    # will be written.
+    # directory, the staging directory will be deleted, and you will be able to
+    # review the tentative manifest via {OwlBot.next_generated_files} and
+    # {OwlBot.next_static_files}. The manifest file itself will not yet be
+    # updated.
     #
     def move_files
       @impl.do_move
@@ -327,7 +358,18 @@ module OwlBot
     end
 
     ##
-    # You may call this method to report a fatal error
+    # Updates the tentative manifest (i.e. {OwlBot.next_generated_files} and
+    # {OwlBot.next_static_files}) to match the current state of the gem
+    # directory. Often called if you made changes after {OwlBot.move_files}.
+    # Does not write the manifest file itself.
+    #
+    def update_manifest
+      @impl.update_manifest
+      self
+    end
+
+    ##
+    # You may call this method to report a fatal error.
     #
     # @param message [String]
     #
@@ -347,6 +389,7 @@ module OwlBot
       else
         @impl.do_move
       end
+      @impl.finish
       self
     end
 
@@ -492,6 +535,8 @@ module OwlBot
     attr_reader :previous_generated_files
     attr_reader :previous_static_files
     attr_reader :content_modifiers
+    attr_reader :next_generated_files
+    attr_reader :next_static_files
     attr_accessor :logger
 
     def sanity_check
@@ -503,12 +548,56 @@ module OwlBot
     end
 
     def do_move
+      error "Already moved!" unless ::File.directory? staging_dir
       copy_dir Path.new staging_dir, gem_dir
       ::FileUtils.rm_rf staging_dir
-      write_manifest
+    end
+
+    def update_manifest
+      filter_next_manifest @next_generated_files, "generated"
+      filter_next_manifest @next_static_files, "static"
+      walk_add_to_manifest Path.new staging_dir, gem_dir
+    end
+
+    def finish
+      if ::File.directory? staging_dir
+        logger&.warn "Move was never called! Doing nothing."
+        return
+      end
+      manifest = {
+        "generated" => @next_generated_files.sort,
+        "static" => @next_static_files.sort
+      }
+      ::File.open manifest_path, "w" do |file|
+        file.puts ::JSON.pretty_generate manifest
+      end
     end
 
     private
+
+    def filter_next_manifest local_paths, type
+      local_paths.delete_if do |local_path|
+        path = Path.new staging_dir, gem_dir, local_path
+        if path.dest_file? || path.dest_symlink?
+          false
+        else
+          path_info local_path, "#{type} file was remmoved after move"
+          true
+        end
+      end
+    end
+
+    def walk_add_to_manifest path
+      if path.dest_directory?
+        path.dest_children.each { |child| walk_add_to_manifest child }
+      elsif (path.dest_file? || path.dest_symlink?) &&
+            path.local_path != MANIFEST_NAME &&
+            !(@next_generated_files + @next_static_files).include?(path.local_path) &&
+            !gitignored?(path)
+        path_info path, "static file was added after move"
+        @next_static_files << path.local_path
+      end
+    end
 
     def find_staged_gem_name staging_root_dir
       error "No staging root dir #{staging_root_dir}" unless ::File.directory? staging_root_dir
@@ -598,7 +687,7 @@ module OwlBot
 
     def object_added path
       if path.src_symlink?
-        ::FileUtils.mv path.src_path, path.dest_path
+        ::FileUtils.copy_entry path.src_path, path.dest_path
         path_info path, "moved staged symlink"
         @next_generated_files << path.local_path
       elsif path.src_file?
@@ -642,7 +731,7 @@ module OwlBot
         path_warning path, "removed non-symlink to make way for generated symlink"
       end
       ::FileUtils.rm_f path.dest_path
-      ::FileUtils.mv path.src_path, path.dest_path
+      ::FileUtils.copy_entry path.src_path, path.dest_path
       @next_generated_files << path.local_path
     end
 
@@ -697,16 +786,6 @@ module OwlBot
 
     def gitignored? path
       !`git check-ignore #{::File.join gem_name, path.local_path}`.empty?
-    end
-
-    def write_manifest
-      manifest = {
-        "generated" => @next_generated_files.sort,
-        "static" => @next_static_files.sort
-      }
-      ::File.open manifest_path, "w" do |file|
-        file.puts ::JSON.pretty_generate manifest
-      end
     end
 
     def error message
