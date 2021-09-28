@@ -304,6 +304,40 @@ describe OwlBot do
     assert_equal [".owlbot.rb"], manifest["static"]
   end
 
+  it "updates the manifest" do
+    create_gem_file "lib/foo.rb", "puts 'foo'\n"
+    create_gem_file "lib/bar.rb", "puts 'bar'\n"
+    create_gem_file "lib/baz.rb", "puts 'baz'\n"
+    create_gem_file "lib/qux.rb", "puts 'qux'\n"
+    create_gem_file ".owlbot.rb", <<~RUBY
+      OwlBot.move_files
+      FileUtils.rm "\#{OwlBot.gem_dir}/lib/bar.rb"
+      FileUtils.rm "\#{OwlBot.gem_dir}/lib/baz.rb"
+      File.open "\#{OwlBot.gem_dir}/lib/ruby.rb", "w" do |file|
+        file.puts "puts 'ruby'"
+      end
+      File.open "\#{OwlBot.gem_dir}/ignored.txt", "w" do |file|
+        file.puts "whoops"
+      end
+      OwlBot.update_manifest
+    RUBY
+    create_gem_file ".gitignore", "ignored.txt\n"
+    create_existing_manifest
+    create_staging_file "lib/foo.rb", "puts 'foo again'\n"
+    create_staging_file "lib/bar.rb", "puts 'bar again'\n"
+
+    invoke_owlbot
+
+    assert_gem_file "lib/foo.rb", "puts 'foo again'\n"
+    assert_gem_file "lib/qux.rb", "puts 'qux'\n"
+    assert_gem_file "lib/ruby.rb", "puts 'ruby'\n"
+    refute_gem_file "lib/bar.rb"
+    refute_gem_file "lib/baz.rb"
+
+    assert_equal ["lib/foo.rb"], manifest["generated"]
+    assert_equal [".gitignore", ".owlbot.rb", "lib/qux.rb", "lib/ruby.rb"], manifest["static"]
+  end
+
   it "omits gitignored files from the static manifest" do
     create_gem_file "ignored.txt", "ignored\n"
     create_gem_file "static.txt", "static\n"
