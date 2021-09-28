@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.4...owlbot-postprocessor/v0.3.0) (2021-09-28)
+
+
+### Features
+
+* Provide a call to update the manifest after post-move changes ([9f7a5c3](https://www.github.com/googleapis/ruby-common-tools/commit/9f7a5c30e40de891dda369511124d8236e3d0a9c))
+
+
+### Bug Fixes
+
+* Handle symlinks correctly in the owlbot postprocessor ([bbe0e97](https://www.github.com/googleapis/ruby-common-tools/commit/bbe0e97a23b42d4562de1c622fa35c7edeb01b68))
+
 ## [0.2.4](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.3...owlbot-postprocessor/v0.2.4) (2021-09-20)
 
 * Don't fail the postprocessor docker image if there's nothing to do ([cc927d0](https://www.github.com/googleapis/ruby-common-tools/commit/cc927d0287a8fcb307c461b7c8f434f91cafbffa))
