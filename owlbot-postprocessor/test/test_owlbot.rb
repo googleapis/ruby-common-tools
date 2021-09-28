@@ -45,6 +45,15 @@ describe OwlBot do
 
   def create_staging_file path, content, gem: nil
     dir = gem ? ::File.join(staging_root_dir, gem) : staging_dir
+    create_dir_file dir, path, content
+  end
+
+  def create_gem_file path, content, gem: nil
+    dir = gem ? ::File.join(repo_dir, gem) : gem_dir
+    create_dir_file dir, path, content
+  end
+
+  def create_dir_file dir, path, content
     path = ::File.join dir, path
     ::FileUtils.mkdir_p ::File.dirname path
     ::File.open path, "w" do |file|
@@ -52,13 +61,20 @@ describe OwlBot do
     end
   end
 
-  def create_gem_file path, content, gem: nil
+  def create_staging_symlink path, target, gem: nil
+    dir = gem ? ::File.join(staging_root_dir, gem) : staging_dir
+    create_dir_symlink dir, path, target
+  end
+
+  def create_gem_symlink path, target, gem: nil
     dir = gem ? ::File.join(repo_dir, gem) : gem_dir
+    create_dir_symlink dir, path, target
+  end
+
+  def create_dir_symlink dir, path, target
     path = ::File.join dir, path
     ::FileUtils.mkdir_p ::File.dirname path
-    ::File.open path, "w" do |file|
-      file.write content
-    end
+    ::File.symlink target, path
   end
 
   def create_existing_manifest generated: [], static: []
@@ -74,7 +90,7 @@ describe OwlBot do
   def assert_gem_file path, content, gem: nil
     dir = gem ? ::File.join(repo_dir, gem) : gem_dir
     path = ::File.join dir, path
-    assert ::File.exist? path
+    assert ::File.file? path
     assert_equal content, ::File.read(path)
   end
 
@@ -82,6 +98,13 @@ describe OwlBot do
     dir = gem ? ::File.join(repo_dir, gem) : gem_dir
     path = ::File.join dir, path
     refute ::File.exist? path
+  end
+
+  def assert_gem_symlink path, target, gem: nil
+    dir = gem ? ::File.join(repo_dir, gem) : gem_dir
+    path = ::File.join dir, path
+    assert ::File.symlink?(path), "Not a symlink: #{path}"
+    assert_equal target, ::File.readlink(path)
   end
 
   def invoke_owlbot gem: nil
@@ -224,6 +247,36 @@ describe OwlBot do
 
     assert_equal ["foo", "hello/foo.txt"], manifest["generated"]
     assert_equal [], manifest["static"]
+  end
+
+  it "copies, creates, and deletes symlinks" do
+    create_gem_symlink "linktodelete", "bye"
+    create_gem_symlink "linktokeep", "ruby"
+    create_gem_symlink "linktochange", "foo"
+    create_staging_symlink "linktoadd", "hello"
+    create_staging_symlink "linktochange", "bar"
+    create_existing_manifest generated: ["linktochange", "linktodelete"]
+
+    invoke_owlbot
+
+    assert_gem_symlink "linktokeep", "ruby"
+    assert_gem_symlink "linktoadd", "hello"
+    assert_gem_symlink "linktochange", "bar"
+    refute_gem_file "linktodelete"
+    assert_equal ["linktoadd", "linktochange"], manifest["generated"]
+    assert_equal ["linktokeep"], manifest["static"]
+  end
+
+  it "does not list symlink contents in the manifest" do
+    create_gem_file "foo/bar.txt", "bar\n"
+    create_gem_symlink "link", "foo"
+    create_staging_file "hello/world.txt", "hello\n"
+    create_staging_symlink "bye", "hello"
+
+    invoke_owlbot
+
+    assert_equal ["bye", "hello/world.txt"], manifest["generated"]
+    assert_equal ["foo/bar.txt", "link"], manifest["static"]
   end
 
   it "honors an owlbot Ruby script" do
