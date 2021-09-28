@@ -369,6 +369,103 @@ module OwlBot
     end
   end
 
+  class Path
+    def initialize src_dir, dest_dir, local_path = nil
+      @src_dir = src_dir
+      @dest_dir = dest_dir
+      @local_path = local_path
+    end
+
+    attr_reader :local_path
+
+    def child name
+      Path.new(@src_dir, @dest_dir, @local_path ? ::File.join(@local_path, name) : name)
+    end
+
+    def src_path
+      @src_path ||= @local_path ? ::File.join(@src_dir, @local_path) : @src_dir
+    end
+
+    def dest_path
+      @dest_path ||= @local_path ? ::File.join(@dest_dir, @local_path) : @dest_dir
+    end
+
+    def src_stat
+      unless defined? @src_stat
+        @src_stat = ::File.lstat src_path rescue nil
+      end
+      @src_stat
+    end
+
+    def dest_stat
+      unless defined? @dest_stat
+        @dest_stat = ::File.lstat dest_path rescue nil
+      end
+      @dest_stat
+    end
+
+    def src_symlink?
+      src_stat&.symlink?
+    end
+
+    def dest_symlink?
+      dest_stat&.symlink?
+    end
+
+    def src_exist?
+      src_stat ? true : false
+    end
+
+    def dest_exist?
+      dest_stat ? true : false
+    end
+
+    def src_file?
+      src_stat&.file? && !src_stat&.symlink?
+    end
+
+    def dest_file?
+      dest_stat&.file? && !dest_stat&.symlink?
+    end
+
+    def src_directory?
+      src_stat&.directory? && !src_stat&.symlink?
+    end
+
+    def dest_directory?
+      dest_stat&.directory? && !dest_stat&.symlink?
+    end
+
+    def src_content
+      return nil unless src_file?
+      @src_content ||= ::File.read(src_path).freeze
+    end
+
+    def dest_content
+      return nil unless dest_file?
+      @dest_content ||= ::File.read(dest_path).freeze
+    end
+
+    def src_children
+      return [] unless src_directory?
+      @src_children ||= ::Dir.children(src_path).sort.map { |name| child name }
+    end
+
+    def dest_children
+      return [] unless dest_directory?
+      @dest_children ||= ::Dir.children(dest_path).sort.map { |name| child name }
+    end
+
+    def eql? other
+      Path === other && @local_path == other.local_path
+    end
+    alias == eql?
+
+    def hash
+      @local_path.hash
+    end
+  end
+
   # @private
   class Impl
     def initialize logger, gem_name
@@ -406,7 +503,7 @@ module OwlBot
     end
 
     def do_move
-      copy_dir []
+      copy_dir Path.new staging_dir, gem_dir
       ::FileUtils.rm_rf staging_dir
       write_manifest
     end
@@ -442,121 +539,154 @@ module OwlBot
       end
     end
 
-    def copy_dir arr
-      src_children = ::Dir.children(::File.join(staging_dir, *arr)).sort
-      dest_children = ::Dir.children(::File.join(gem_dir, *arr)).sort
-      (dest_children - src_children).each do |child|
-        object_removed arr + [child]
+    def copy_dir path
+      (path.dest_children - path.src_children).each do |child|
+        object_removed child
       end
-      (src_children - dest_children).each do |child|
-        object_added arr + [child]
+      (path.src_children - path.dest_children).each do |child|
+        object_added child
       end
-      (src_children & dest_children).each do |child|
-        object_changed arr + [child]
+      (path.src_children & path.dest_children).each do |child|
+        object_changed child
       end
     end
 
-    def object_removed arr
-      path = arr.join "/"
-      dest = ::File.join gem_dir, path
-      if ::File.file? dest
-        if previous_generated_files.include? path
-          !handle_file path
-        elsif gitignored? path
-          path_warning path, "retained existing gitignored file"
-          false
-        elsif path == MANIFEST_NAME
-          path_info path, "retained manifest"
-          false
+    def object_removed path
+      if path.dest_directory?
+        directory_removed path
+      elsif path.dest_file? || path.dest_symlink?
+        file_removed path
+      else
+        path_warning path, "deleted unknown type object"
+        ::FileUtils.rm_f path.dest_path
+        true
+      end
+    end
+
+    def directory_removed path
+      all_deleted = path.dest_children.reduce true do |running, child|
+        object_removed(child) && running
+      end
+      if all_deleted
+        ::FileUtils.rm_rf path.dest_path
+        path_info path, "deleted directory"
+      end
+      all_deleted
+    end
+
+    def file_removed path
+      if previous_generated_files.include? path.local_path
+        if path.dest_symlink?
+          path_info path, "deleted existing symlink"
+          ::FileUtils.rm_f path.dest_path
+          true
         else
-          path_info path, "retained existing non-generated file"
-          @next_static_files << path
-          false
+          !handle_file path
         end
-      elsif ::File.directory? dest
-        all_deleted = ::Dir.children(dest).reduce(true) do |running, child|
-          object_removed(arr + [child]) && running
-        end
-        if all_deleted
-          ::FileUtils.rm_rf dest
-          path_info path, "deleted directory"
-        end
-        all_deleted
+      elsif gitignored? path
+        path_warning path, "retained existing gitignored file"
+        false
+      elsif path.local_path == MANIFEST_NAME
+        path_info path, "retained manifest"
+        false
+      else
+        path_info path, "retained existing non-generated file"
+        @next_static_files << path.local_path
+        false
       end
     end
 
-    def object_added arr
-      path = arr.join "/"
-      src = ::File.join staging_dir, path
-      if ::File.file? src
+    def object_added path
+      if path.src_symlink?
+        ::FileUtils.mv path.src_path, path.dest_path
+        path_info path, "moved staged symlink"
+        @next_generated_files << path.local_path
+      elsif path.src_file?
         handle_file path
-      elsif ::File.directory? src
-        ::FileUtils.mkdir ::File.join(gem_dir, path)
-        ::Dir.children(src).each { |child| object_added arr + [child] }
+      elsif path.src_directory?
+        ::FileUtils.mkdir path.dest_path
+        path.src_children.each { |child| object_added child }
       end
     end
 
-    def object_changed arr
-      path = arr.join "/"
-      if path == MANIFEST_NAME
+    def object_changed path
+      if path.local_path == MANIFEST_NAME
         path_warning path, "prevented generated file from overwriting the manifest"
         return
       end
-      src = ::File.join staging_dir, path
-      dest = ::File.join gem_dir, path
-      if ::File.file? src
-        if ::File.file? dest
-          if gitignored? path
-            path_warning path, "previously gitignored file being replaced with generated file"
-          elsif !previous_generated_files.empty? && !previous_generated_files.include?(path)
-            path_warning path, "previously static file being replaced with generated file"
-          end
-        else
-          path_warning path, "removed non-file to make way for generated file"
-          ::FileUtils.rm_rf dest
-        end
-        handle_file path
-      elsif ::File.directory? src
-        if ::File.directory? dest
-          copy_dir arr
-        else
-          path_warning path, "removed non-directory to make way for generated directory"
-          ::FileUtils.rm_rf dest
-          object_added arr
-        end
+      if path.src_directory?
+        directory_changed path
+      elsif path.src_symlink?
+        symlink_changed path
+      elsif path.src_file?
+        file_changed path
+      else
+        path_warning path, "ignored unknown source object"
       end
     end
 
+    def directory_changed path
+      if path.dest_directory?
+        copy_dir path
+      else
+        path_warning path, "removed non-directory to make way for generated directory"
+        ::FileUtils.rm_rf path.dest_path
+        object_added path
+      end
+    end
+
+    def symlink_changed path
+      if path.dest_symlink?
+        path_info path, "moved staged symlink"
+      else
+        path_warning path, "removed non-symlink to make way for generated symlink"
+      end
+      ::FileUtils.rm_f path.dest_path
+      ::FileUtils.mv path.src_path, path.dest_path
+      @next_generated_files << path.local_path
+    end
+
+    def file_changed path
+      if path.dest_file?
+        if gitignored? path
+          path_warning path, "previously gitignored file being replaced with generated file"
+        elsif !previous_generated_files.empty? && !previous_generated_files.include?(path.local_path)
+          path_warning path, "previously static file being replaced with generated file"
+        end
+      else
+        path_warning path, "removed non-file to make way for generated file"
+        ::FileUtils.rm_rf path.dest_path
+      end
+      handle_file path
+    end
+
     def handle_file path
-      src = ::File.join staging_dir, path
-      dest = ::File.join gem_dir, path
-      src_content = ::File.file?(src) ? ::File.read(src).freeze : nil
-      dest_content = ::File.file?(dest) ? ::File.read(dest).freeze : nil
-      content = apply_modifiers path, src_content, dest_content
+      content = apply_modifiers path
       if content.nil?
-        if dest_content.nil?
+        if path.dest_content.nil?
           path_info path, "new staged file removed"
         else
-          ::FileUtils.rm_f dest
+          ::FileUtils.rm_f path.dest_path
           path_info path, "deleted existing file"
         end
       else
-        label = content == src_content ? "" : " with modifications"
-        if content == dest_content
+        label = content == path.src_content ? "" : " with modifications"
+        if content == path.dest_content
           path_info path, "staged file#{label} identical to existing file"
         else
-          ::FileUtils.cp src, dest
-          ::File.open(dest, "w") { |file| file.write content } unless content == src_content
+          ::FileUtils.cp path.src_path, path.dest_path
+          ::File.open(path.dest_path, "w") { |file| file.write content } unless content == path.src_content
           path_info path, "moved staged file#{label}"
         end
-        (src_content ? @next_generated_files : @next_static_files) << path
+        (path.src_content ? @next_generated_files : @next_static_files) << path.local_path
       end
       !content.nil?
     end
 
-    def apply_modifiers path, content, dest_content
+    def apply_modifiers path
+      content = path.src_content
       content_modifiers.each do |modifier|
-        next_content = modifier.call content.dup, dest_content, path
+        next_content = modifier.call content.dup, path.dest_content, path.local_path
         if next_content != content
           path_info path, "modifier #{modifier.name.inspect} changed the content"
           content = next_content
@@ -566,7 +696,7 @@ module OwlBot
     end
 
     def gitignored? path
-      !`git check-ignore #{::File.join gem_name, path}`.empty?
+      !`git check-ignore #{::File.join gem_name, path.local_path}`.empty?
     end
 
     def write_manifest
@@ -584,11 +714,11 @@ module OwlBot
     end
 
     def path_info path, str
-      logger&.info "#{path}: #{str}"
+      logger&.info "#{path.local_path}: #{str}"
     end
 
     def path_warning path, str
-      logger&.warn "#{path}: #{str}"
+      logger&.warn "#{path.local_path}: #{str}"
     end
   end
 end
