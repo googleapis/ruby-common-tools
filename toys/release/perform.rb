@@ -105,11 +105,10 @@ def lookup_current_versions regex
   versions = {}
   lines = capture(["gem", "search", regex.source]).split "\n"
   lines.each do |line|
-    if line =~ /^([\w-]+) \((\d+(?:\.\w+)+)\)/
-      gem_name = Regexp.last_match[1]
-      gem_version = Regexp.last_match[2]
-      versions[gem_name] = gem_version if regex.match? gem_name
-    end
+    next unless line =~ /^([\w-]+) \((\d+(?:\.\w+)+)\)/
+    gem_name = Regexp.last_match[1]
+    gem_version = Regexp.last_match[2]
+    versions[gem_name] = gem_version if regex.match? gem_name
   end
   raise "Something went wrong getting all current gem versions" if versions.empty?
   versions
