@@ -74,8 +74,8 @@ end
 def determine_packages
   packages = {}
   if all
-    current_versions = lookup_current_versions all
     regex = Regexp.new all
+    current_versions = lookup_current_versions regex
     Dir.glob "*/*.gemspec" do |path|
       name = File.dirname path
       packages[name] = current_versions[name] if regex.match? name
@@ -103,10 +103,12 @@ end
 
 def lookup_current_versions regex
   versions = {}
-  lines = `gem search '^#{regex}'`.split "\n"
+  lines = capture(["gem", "search", regex.source]).split "\n"
   lines.each do |line|
-    if line =~ /^(#{regex}) \(([\d.]+)\)/
-      versions[Regexp.last_match[1]] = Regexp.last_match[2]
+    if line =~ /^([\w-]+) \((\d+(?:\.\w+)+)\)/
+      gem_name = Regexp.last_match[1]
+      gem_version = Regexp.last_match[2]
+      versions[gem_name] = gem_version if regex.match? gem_name
     end
   end
   raise "Something went wrong getting all current gem versions" if versions.empty?
