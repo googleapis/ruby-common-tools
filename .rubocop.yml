@@ -12,6 +12,9 @@ Metrics/ModuleLength:
   Max: 300
 Metrics/PerceivedComplexity:
   Max: 15
+Naming/FileName:
+  Exclude:
+    - "toys/release/build-rad.rb"
 Style/Documentation:
   Enabled: false
 Style/MixinGrouping:
