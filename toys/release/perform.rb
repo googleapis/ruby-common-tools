@@ -209,12 +209,12 @@ class Performer
 
   def publish_rad dry_run: false
     Dir.chdir gem_dir do
-      unless File.file? ".yardopts-cloudrad"
-        logger.warn "**** No .yardopts-cloudrad file present. Skipping publish_rad for #{gem_name}"
+      unless File.file? ".yardopts"
+        logger.warn "**** No .yardopts file present. Skipping publish_rad for #{gem_name}"
         return
       end
       logger.info "**** Starting publish_rad for #{gem_name}"
-      run_aux_task "cloudrad", remove: ["doc", ".yardoc"]
+      exec_tool(current_tool.full_name[0..-2] + ["build-rad", "--gem-name", gem_name])
       run_docuploader staging_bucket: rad_staging_bucket,
                       extra_docuploader_args: ["--destination-prefix", "docfx"],
                       dry_run: dry_run
