@@ -37,13 +37,14 @@ end
 
 def copy_markdown_file source_filename, dest_filename
   source_lines = File.readlines source_filename
+  source_lines = ensure_markdown_header source_lines, source_filename
   dest_path = File.join options.serializer.basepath, dest_filename
   File.open dest_path, "w" do |dest|
     in_code_state = 0
     source_lines.each do |line|
       case in_code_state
       when 0
-        if line.strip == "```ruby"
+        if line.rstrip == "```ruby"
           in_code_state = 1
           next
         end
@@ -51,7 +52,7 @@ def copy_markdown_file source_filename, dest_filename
         line = "<pre class=\"prettyprint lang-rb\">#{line}"
         in_code_state = 2
       when 2
-        if line.strip == "```"
+        if line.rstrip == "```"
           in_code_state = 0
           line = "</pre>\n"
         end
@@ -59,6 +60,20 @@ def copy_markdown_file source_filename, dest_filename
       dest.puts line
     end
   end
+end
+
+def ensure_markdown_header lines, filename
+  lines.shift while lines.first&.empty?
+  case lines.first
+  when nil, /^##? \S/
+    # pass
+  when /^###+ (\S.*\n?)$/
+    lines[0] = "## #{Regexp.last_match[1]}"
+  else
+    title = File.basename filename, ".*"
+    lines = ["# #{title}\n", "\n"] + lines
+  end
+  lines
 end
 
 def copy_text_file source_filename, dest_filename
