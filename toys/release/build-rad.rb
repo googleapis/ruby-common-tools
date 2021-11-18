@@ -37,6 +37,7 @@ def run
   cmd = ["bundle", "exec"] + cmd if bundle
   env = { "CLOUDRAD_GEM_NAME" => gem_name }
   exec cmd, env: env
+  sanity_check
 end
 
 def build_options yardopts_content
@@ -64,4 +65,11 @@ def build_options yardopts_content
     end
   end
   final_options
+end
+
+def sanity_check
+  require "yaml"
+  Dir.glob("doc/*.yml") do |path|
+    YAML.load_file path
+  end
 end

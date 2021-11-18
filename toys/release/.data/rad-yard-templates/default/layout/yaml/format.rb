@@ -127,8 +127,9 @@ def docstring obj
 end
 
 def escapes str
-  str = str.gsub /(?!\\)"/, '\"'
-  str.gsub /(?!\\)\n/, '\n'
+  str.gsub("\\", "\\\\\\\\")
+     .gsub("\"", "\\\"")
+     .gsub("\n", "\\n")
 end
 
 def pre_format str, min_header: nil, toplevel_header: false
