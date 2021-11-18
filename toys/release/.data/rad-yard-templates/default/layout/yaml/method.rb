@@ -153,7 +153,7 @@ def arg_text method, params, indent
     entry += " (#{types.join ", "})" unless types.empty?
     default_value ||= canonical_method.parameters.select { |n| n[0] == "#{name}:" }.last
     if default_value && default_value.last
-      defaults = "(defaults to: #{default_value.last})"
+      defaults = "(defaults to: #{escapes default_value.last})"
       entry += " #{italic defaults}"
     end
     entry += " — #{pre_format arg.text}" unless arg.text.nil? || arg.text.empty?
