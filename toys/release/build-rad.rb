@@ -69,7 +69,7 @@ end
 
 def sanity_check
   require "yaml"
-  Dir.glob("doc/*.yml") do |path|
+  Dir.glob "doc/*.yml" do |path|
     YAML.load_file path
   end
 end
