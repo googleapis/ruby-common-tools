@@ -1,5 +1,5 @@
-require_relative "./format.rb"
-require_relative "./method.rb"
+require_relative "./format"
+require_relative "./method"
 
 def init
   @options = options
