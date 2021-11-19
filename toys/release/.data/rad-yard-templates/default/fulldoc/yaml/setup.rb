@@ -4,7 +4,10 @@ def init
   toc_items = []
   # yard populates options.objects w/ all classes & modules and also yardoc root
   options.objects.each do |object|
-    next if object.root?
+    if object.root?
+      @root_object = object
+      next
+    end
     toc_items << object
     serialize object
   end
@@ -36,44 +39,67 @@ def copy_files
 end
 
 def copy_markdown_file source_filename, dest_filename
-  source_lines = File.readlines source_filename
-  source_lines = ensure_markdown_header source_lines, source_filename
+  content = File.read source_filename
+  content = normalize_markdown_newlines content
+  content = ensure_markdown_header content, source_filename
+  content = process_markdown_code_blocks content
+  content = transform_local_markdown_links content
+  content = process_markdown_yard_links content
+
   dest_path = File.join options.serializer.basepath, dest_filename
   File.open dest_path, "w" do |dest|
-    in_code_state = 0
-    source_lines.each do |line|
-      case in_code_state
-      when 0
-        if line.rstrip == "```ruby"
-          in_code_state = 1
-          next
-        end
-      when 1
-        line = "<pre class=\"prettyprint lang-rb\">#{line}"
-        in_code_state = 2
-      when 2
-        if line.rstrip == "```"
-          in_code_state = 0
-          line = "</pre>\n"
-        end
-      end
-      dest.puts line
-    end
+    dest.puts content
   end
 end
 
-def ensure_markdown_header lines, filename
-  lines.shift while lines.first&.empty?
-  case lines.first
-  when nil, /^##? \S/
-    # pass
-  when /^###+ (\S.*\n?)$/
-    lines[0] = "## #{Regexp.last_match[1]}"
+def normalize_markdown_newlines content
+  content.sub!(/^\n+/, "")
+  content = "#{content}\n" unless content.end_with? "\n"
+  content
+end
+
+def ensure_markdown_header content, filename
+  case content
+  when /^##? +\S/
+    content
+  when /^###+ +\S/
+    content.sub(/^###+/, "##")
   else
     title = File.basename filename, ".*"
-    lines = ["# #{title}\n", "\n"] + lines
+    "# #{title}\n\n#{content}"
   end
-  lines
+end
+
+def transform_local_markdown_links content
+  content.gsub(/\[([^\]]*)\]\(([^):]*\.md)\)/, "{file:\\2 \\1}")
+end
+
+def process_markdown_yard_links content
+  RADLinkFormatter.new(@root_object, options).parse_links content
+end
+
+def process_markdown_code_blocks content
+  lines = []
+  in_code_state = 0
+  content.split("\n").each do |line|
+    case in_code_state
+    when 0
+      if line.rstrip == "```ruby"
+        in_code_state = 1
+        next
+      end
+    when 1
+      line = "<pre class=\"prettyprint lang-rb\">#{line}"
+      in_code_state = 2
+    when 2
+      if line.rstrip == "```"
+        in_code_state = 0
+        line = "</pre>\n"
+      end
+    end
+    lines << line
+  end
+  lines.join "\n"
 end
 
 def copy_text_file source_filename, dest_filename
