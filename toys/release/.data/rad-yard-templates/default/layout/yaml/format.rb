@@ -102,15 +102,20 @@ def object_match str, t
   matches = object_list.select { |obj| obj.path == str }
   return matches.first unless matches.empty?
 
-  matches = object_list.select { |obj| obj.path.end_with? str }
+  suffix = "::#{str}"
+
+  matches = object_list.select { |obj| obj.path.end_with? suffix }
   if matches.size > 1
     matches.select! { |obj| obj.path.start_with? @object.path }
   end
   return matches.first unless matches.empty?
-  
-  matches = children_list.select { |obj| obj.path.end_with? str }
-  matches.select! { |obj| obj.name == str.split("#").last.split(".").last }
+
+  method_name = str.split("#").last.split(".").last
+
+  matches = children_list.select { |obj| obj.path.end_with? suffix }
+  matches.select! { |obj| obj.name == method_name }
   return matches.first unless matches.empty?
+
   nil
 end
 
