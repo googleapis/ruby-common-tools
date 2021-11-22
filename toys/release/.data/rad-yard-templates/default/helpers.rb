@@ -90,7 +90,7 @@ class RADLinkFormatter
   end
 
   def anchor_for obj
-    anchor = obj.path.tr "?!:#\.", "_"
+    anchor = obj.path.tr "?!=:#.", "_"
     if obj.type == :method
       anchor += obj.scope == :class ? "_class_" : "_instance_"
     end
