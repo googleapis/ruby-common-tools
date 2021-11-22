@@ -2,7 +2,8 @@ def object_methods object = nil
   object ||= @object
   method_list = object.children.select { |child| child.type == :method }
   method_list.reject! do |method| 
-    method.visibility == :private || method.tags.any? { |tag| tag.tag_name == "private" }
+    method.visibility == :private || method.tags.any? { |tag| tag.tag_name == "private" } ||
+      method.visibility == :protected || method.tags.any? { |tag| tag.tag_name == "protected" }
   end
   dot_methods = []
   instance_methods = []
