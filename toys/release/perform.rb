@@ -43,6 +43,8 @@ def run
     releaser = Performer.new name,
                              last_version: version,
                              logger: logger,
+                             tool_name: tool_name,
+                             cli: cli,
                              rubygems_api_token: rubygems_api_token || ENV["RUBYGEMS_API_TOKEN"],
                              docs_staging_bucket: docs_staging_bucket || ENV["STAGING_BUCKET"] || "docs-staging",
                              rad_staging_bucket: rad_staging_bucket || ENV["V2_STAGING_BUCKET"] || "docs-staging-v2",
@@ -122,9 +124,13 @@ class Performer
                  rad_staging_bucket: nil,
                  docuploader_credentials: nil,
                  last_version: nil,
-                 logger: nil
+                 logger: nil,
+                 tool_name: nil,
+                 cli: nil
     @gem_name = gem_name
     @logger = logger
+    @tool_name = tool_name
+    @cli = cli
     result_callback = proc { |result| raise "Command failed" unless result.success? }
     @executor = Toys::Utils::Exec.new logger: @logger, result_callback: result_callback
     @gem_dir = gem_dir
@@ -144,6 +150,8 @@ class Performer
   attr_reader :rad_staging_bucket
   attr_reader :docuploader_credentials
   attr_reader :logger
+  attr_reader :tool_name
+  attr_reader :cli
 
   def needs_gem_publish?
     gem_version > current_rubygems_version
@@ -157,33 +165,48 @@ class Performer
       logger.warn "**** Gem #{gem_name} is already up to date at version #{gem_version}. Skipping."
       return
     end
-    transform_links
-    publish_gem dry_run: dry_run
-    publish_docs dry_run: dry_run if enable_docs
-    publish_rad dry_run: dry_run if enable_rad
+    transformation_info = transform_links
+    begin
+      publish_gem dry_run: dry_run
+      publish_docs dry_run: dry_run if enable_docs
+      publish_rad dry_run: dry_run if enable_rad
+    ensure
+      detransform_links transformation_info
+    end
   end
 
   def transform_links
     logger.info "**** Transforming links for #{gem_name}"
+    transformation_info = {}
     Dir.chdir gem_dir do
       Dir.glob "*.md" do |filename|
         content = File.read filename
-        content.gsub!(/\[([^\]]*)\]\(([^):]*\.md)\)/, "{file:\\2 \\1}")
+        transformation_info[filename] = content
+        transformed_content = content.gsub(/\[([^\]]*)\]\(([^):]*\.md)\)/, "{file:\\2 \\1}")
+        File.open(filename, "w") { |file| file << transformed_content }
+      end
+    end
+    transformation_info
+  end
+
+  def detransform_links transformation_info
+    Dir.chdir gem_dir do
+      transformation_info.each do |filename, content|
         File.open(filename, "w") { |file| file << content }
       end
     end
   end
 
   def publish_gem dry_run: false
-    logger.info "**** Starting publish_gem for #{gem_name}"
     Dir.chdir gem_dir do
-      run_aux_task "build", remove: "pkg"
-      built_gem_path = "pkg/#{gem_name}-#{gem_version}.gem"
-      raise "Failed to build #{built_gem_path}" unless File.file? built_gem_path
       unless needs_gem_publish?
         logger.warn "**** Already published. Skipping gem publish of #{gem_name}"
         return
       end
+      logger.info "**** Starting publish_gem for #{gem_name}"
+      run_aux_task "build", remove: "pkg"
+      built_gem_path = "pkg/#{gem_name}-#{gem_version}.gem"
+      raise "Failed to build #{built_gem_path}" unless File.file? built_gem_path
       if dry_run
         logger.warn "**** In dry run mode. Skipping gem publish of #{gem_name}"
         return
@@ -214,7 +237,7 @@ class Performer
         return
       end
       logger.info "**** Starting publish_rad for #{gem_name}"
-      exec_tool(current_tool.full_name[0..-2] + ["build-rad", "--gem-name", gem_name])
+      cli.run(*tool_name[0..-2], "build-rad", "--gem-name", gem_name)
       run_docuploader staging_bucket: rad_staging_bucket,
                       extra_docuploader_args: ["--destination-prefix", "docfx"],
                       dry_run: dry_run
