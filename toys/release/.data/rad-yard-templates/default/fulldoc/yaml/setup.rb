@@ -29,6 +29,7 @@ def copy_files
   # copy markdown files into the yard output folder
   options.files.each do |file|
     dest_filename = file.filename == readme_filename ? "index.md" : file.filename
+    dest_filename = dest_filename.tr "_", "-"
     case File.extname dest_filename
     when ".md"
       copy_markdown_file file.filename, dest_filename
@@ -42,6 +43,7 @@ def copy_markdown_file source_filename, dest_filename
   content = File.read source_filename
   content = normalize_markdown_newlines content
   content = ensure_markdown_header content, source_filename
+  content = munge_markdown_copyright_text content
   content = process_markdown_code_blocks content
   content = transform_local_markdown_links content
   content = process_markdown_yard_links content
@@ -68,6 +70,10 @@ def ensure_markdown_header content, filename
     title = File.basename filename, ".*"
     "# #{title}\n\n#{content}"
   end
+end
+
+def munge_markdown_copyright_text content
+  content.gsub "Update copyright year", "Update year"
 end
 
 def transform_local_markdown_links content
