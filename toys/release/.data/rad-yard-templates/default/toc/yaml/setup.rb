@@ -32,14 +32,16 @@ def overview_items
   text = []
   readme_filename = options.readme.filename
   options.files.each do |file|
-    href = case file.filename
-           when readme_filename
-             "index.md"
-           when /^(.+)\.txt$/, /^(\.?[^.]+)$/
-             "#{Regexp.last_match[1]}.md"
-           when /^(.+\.md)$/
-             Regexp.last_match[1]
-           end
+    href =
+      case file.filename
+        when readme_filename
+          "index.md"
+        when /^(.+)\.txt$/, /^(\.?[^.]+)$/
+          name = Regexp.last_match[1].tr("_", "-")
+          "#{name}.md"
+        when /^(.+\.md)$/
+          Regexp.last_match[1].tr("_", "-")
+        end
     next unless href
     name = custom_names[href] || File.basename(href, ".*").tr("_-", " ").capitalize
     text << "    - name: #{name}"
