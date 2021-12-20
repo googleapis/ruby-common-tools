@@ -227,7 +227,7 @@ def raise_text
 end
 
 def tag_content tag
-  types = tag.types.map { |type| link_objects type }
+  types = tag.types.to_a.map { |type| link_objects type }
   entry = "- description: \""
   entry += "#{bold tag.name} " if tag.name && !tag.name.empty?
   entry += "(#{types.join ", "})" unless types.empty?
