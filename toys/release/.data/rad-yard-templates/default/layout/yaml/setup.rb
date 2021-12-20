@@ -8,7 +8,7 @@ def init
   @object = options.item
   @method_list = object_methods @object
   @constants = @object.children.select { |child| child.type == :constant }.sort_by { |child| child.path }
-  @references = @object.children.reject { |child| [:method, :constant].include? child.type }
+  @references = @object.children.reject { |child| [:method, :constant, :classvariable].include? child.type }
 
   # the children yaml field is supposed to list all children of the @object that will somewhere appear in documentation.
   # the references yaml field is for anything under children that wasn't defined within the same yaml page (other classes/modules)
@@ -53,7 +53,7 @@ def full_object_list
   @full_object_list = []
   object_list.each do |obj|
     @full_object_list += object_methods(obj)
-    references = obj.children.reject { |child| [:method, :constant].include? child.type }
+    references = obj.children.reject { |child| [:method, :constant, :classvariable].include? child.type }
     @full_object_list += references
   end
   @full_object_list
@@ -63,7 +63,7 @@ def children_list
   return @children_list if @children_list
 
   @children_list = object_methods(@object)
-  @children_list += @object.children.reject { |child| :method == child.type }
+  @children_list += @object.children.reject { |child| [:method, :classvariable].include? child.type }
   @children_list.reject! do |child| 
     child.visibility == :private || child.tags.any? { |tag| tag.tag_name == "private" }
   end
