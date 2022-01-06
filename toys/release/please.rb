@@ -17,6 +17,7 @@
 desc "Runs release-please."
 
 flag :install
+flag :release_please_version, "--release-please-version=VERSION", default: "12.6.3" # or "latest"
 flag :use_fork, "--fork"
 flag :base_dir, "--base-dir=PATH"
 flag :release_type, "--release-type=TYPE", default: "ruby"
@@ -64,7 +65,7 @@ end
 
 def handle_install
   return unless install
-  exec ["npm", "install", "release-please"]
+  exec ["npm", "install", "release-please@#{release_please_version}"]
   exit 0
 end
 
@@ -175,7 +176,8 @@ end
 
 def build_command dir, package_name, cur_version, release_as, version_path
   cmd = [
-    "npx", "release-please", "release-pr",
+    "npx", "-p", "release-please@#{release_please_version}",
+    "release-please", "release-pr",
     "--package-name", package_name,
     "--path", dir,
     "--release-type", release_type,
