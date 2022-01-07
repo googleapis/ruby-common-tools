@@ -161,6 +161,7 @@ def code_tail
 end
 
 def codeblock str
+  str = str.gsub("&", "&amp;").gsub("<", "&lt;").gsub(">", "&gt;")
   code_head + str + code_tail
 end
 
