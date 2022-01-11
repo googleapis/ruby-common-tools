@@ -42,6 +42,7 @@ def run
   check_github_context
   Dir.chdir context_directory
   handle_install
+  init_repo
   package_info = init_info
 
   @errors = []
@@ -69,9 +70,17 @@ def handle_install
   exit 0
 end
 
-def init_info
+def init_repo
   set :repo_url, default_repo_url unless repo_url
   set :github_token, default_github_token unless github_token
+  return unless use_fork
+  exec ["gh", "repo", "fork", "--remote=false"]
+  repo = ::JSON.parse(capture(["gh", "repo", "view", "--json=name"]))["name"]
+  owner = ::JSON.parse(capture(["gh", "api", "/user"]))["login"]
+  exec ["gh", "repo", "sync", "#{owner}/#{repo}"]
+end
+
+def init_info
   package_info = input_packages.empty? ? find_all_packages : interpret_input_packages
   raise "Cannot provide --version-file with multiple packages" if package_info.size > 1 && version_file
   raise "Cannot provide --version-expr with multiple packages" if package_info.size > 1 && version_expr
