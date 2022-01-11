@@ -91,12 +91,12 @@ end
 def find_all_packages
   prefix = base_dir ? "#{base_dir}/" : ""
   if non_gem
-    Dir.glob("#{prefix}*/CHANGELOG.md").map do |path|
+    Dir.glob("#{prefix}*/CHANGELOG.md").shuffle.map do |path|
       dir = File.dirname path
       [File.basename(dir), nil, dir]
     end
   else
-    (Dir.glob("#{prefix}*.gemspec") + Dir.glob("#{prefix}*/*.gemspec")).map do |path|
+    (Dir.glob("#{prefix}*.gemspec") + Dir.glob("#{prefix}*/*.gemspec")).shuffle.map do |path|
       [File.basename(path, ".gemspec"), nil, File.dirname(path)]
     end
   end
