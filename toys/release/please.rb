@@ -71,6 +71,7 @@ def handle_install
 end
 
 def init_repo
+  require "json"
   set :repo_url, default_repo_url unless repo_url
   set :github_token, default_github_token unless github_token
   return unless use_fork
