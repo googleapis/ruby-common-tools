@@ -43,6 +43,7 @@ def copy_markdown_file source_filename, dest_filename
   content = File.read source_filename
   content = normalize_markdown_newlines content
   content = ensure_markdown_header content, source_filename
+  content = munge_changelog_file_header content if source_filename == "CHANGELOG.md"
   content = munge_markdown_copyright_text content
   content = process_markdown_code_blocks content
   content = transform_local_markdown_links content
@@ -55,7 +56,7 @@ def copy_markdown_file source_filename, dest_filename
 end
 
 def normalize_markdown_newlines content
-  content.sub!(/^\n+/, "")
+  content.sub!(/\A\n+/, "")
   content = "#{content}\n" unless content.end_with? "\n"
   content
 end
@@ -70,6 +71,10 @@ def ensure_markdown_header content, filename
     title = File.basename filename, ".*"
     "# #{title}\n\n#{content}"
   end
+end
+
+def munge_changelog_file_header content
+  content.sub(/\A# [^\n]+\n/, "# Release history for #{ENV["CLOUDRAD_GEM_NAME"]}\n")
 end
 
 def munge_markdown_copyright_text content
