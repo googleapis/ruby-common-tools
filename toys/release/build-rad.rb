@@ -33,7 +33,7 @@ def run
     gem "redcarpet", "~> 3.5", ">= 3.5.1"
   end
   yardopts_content = File.read yardopts
-  cmd = ["yard", "doc"] + build_options(yardopts_content)
+  cmd = ["yard", "doc", "--no-yardopts"] + build_options(yardopts_content)
   cmd = ["bundle", "exec"] + cmd if bundle
   env = { "CLOUDRAD_GEM_NAME" => gem_name }
   exec cmd, env: env
@@ -56,7 +56,7 @@ def build_options yardopts_content
     when "--format"
       in_format = true
       next
-    when /^--format[= ]/, ""
+    when /^--format[= ]/, "", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", /^LICENSE(\.md)?/
       next
     when /^(--[a-z-]+)\s+(.+)$/
       final_options << "#{Regexp.last_match[1]}=#{Regexp.last_match[2]}"
