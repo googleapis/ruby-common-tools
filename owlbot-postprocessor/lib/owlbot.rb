@@ -299,6 +299,26 @@ module OwlBot
     end
 
     ##
+    # A convenience method that installs a modifier preserving `release_level`
+    # fields in existing `.repo-metadata.json` files.
+    #
+    # @param name [String] Optional name for the modifier to add. Defaults to
+    #     `"preserve_repo_metadata_release_levels"`.
+    #
+    def preserve_repo_metadata_release_levels name: nil
+      path = [/\.repo-metadata\.json$/]
+      name ||= "preserve_repo_metadata_release_levels"
+      modifier path: path, name: name do |src, dest|
+        if src && dest
+          copyright_regex = /"release_level": "(\w+)"/
+          match = copyright_regex.match dest
+          src = src.sub copyright_regex, "\"release_level\": \"#{match[1]}\"" if match
+        end
+        src
+      end
+    end
+
+    ##
     # A convenience method that installs a modifier preventing overwriting of
     # certain files, if they exist, by newly generated files. This is commonly
     # used to prevent `CHANGELOG.md` and `version.rb` files from being
@@ -321,6 +341,9 @@ module OwlBot
     #
     # * A modifier named `"preserve_existing_copyright_years"` which ensures
     #   the copyright year of existing files is not modified.
+    # * A modifier named `"preserve_repo_metadata_release_levels"` which
+    #   ensures the `"release_level"` field of `.repo-metadata.json` files is
+    #   not modified.
     # * A modifier named `"prevent_overwrite_of_existing_changelog_file"` which
     #   ensures that an existing changelog file is not replaced by the empty
     #   generated changelog.
@@ -335,6 +358,7 @@ module OwlBot
     #
     def install_default_modifiers
       preserve_existing_copyright_years
+      preserve_repo_metadata_release_levels
       prevent_overwrite_of_existing "CHANGELOG.md",
                                     name: "prevent_overwrite_of_existing_changelog_file"
       prevent_overwrite_of_existing "lib/#{@impl.gem_name.tr '-', '/'}/version.rb",

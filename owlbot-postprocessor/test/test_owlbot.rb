@@ -230,6 +230,39 @@ describe OwlBot do
     assert_equal [], manifest["static"]
   end
 
+  it "preserves release_level field" do
+    orig_content = <<~CONTENT
+      {
+          "api_id": "foo.googleapis.com",
+          "release_level": "stable",
+          "ruby-rulez": "yeah!"
+      }
+    CONTENT
+    incoming_content = <<~CONTENT
+      {
+          "api_id": "bar.googleapis.com",
+          "release_level": "unknown",
+          "ruby-rulez": "yeah!"
+      }
+    CONTENT
+    resulting_content = <<~CONTENT
+      {
+          "api_id": "bar.googleapis.com",
+          "release_level": "stable",
+          "ruby-rulez": "yeah!"
+      }
+    CONTENT
+    create_gem_file "hello/.repo-metadata.json", orig_content
+    create_gem_file "hello/something-else.json", orig_content
+    create_staging_file "hello/.repo-metadata.json", incoming_content
+    create_staging_file "hello/something-else.json", incoming_content
+
+    invoke_owlbot
+
+    assert_gem_file "hello/.repo-metadata.json", resulting_content
+    assert_gem_file "hello/something-else.json", incoming_content
+  end
+
   it "deals with types changing" do
     create_gem_file "hello", "hello world\n"
     create_gem_file "foo/bar.rb", "puts 'bar'\n"
