@@ -2,10 +2,7 @@
 
 ## [0.4.0](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.3.0...owlbot-postprocessor/v0.4.0) (2022-02-02)
 
-
-### Features
-
-* **owlbot:** Preserve release_level repo metadata field ([#67](https://www.github.com/googleapis/ruby-common-tools/issues/67)) ([e71a809](https://www.github.com/googleapis/ruby-common-tools/commit/e71a80949ba5a1cd94291d17d9a896c490f973d5))
+* Preserve release_level repo metadata field ([#67](https://www.github.com/googleapis/ruby-common-tools/issues/67)) ([e71a809](https://www.github.com/googleapis/ruby-common-tools/commit/e71a80949ba5a1cd94291d17d9a896c490f973d5))
 
 ## [0.3.0](https://www.github.com/googleapis/ruby-common-tools/compare/owlbot-postprocessor/v0.2.4...owlbot-postprocessor/v0.3.0) (2021-09-28)
 
