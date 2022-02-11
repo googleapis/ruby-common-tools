@@ -32,9 +32,10 @@ module Yoshi
                 labels: nil,
                 auto_approve: false,
                 approval_token: nil,
+                extra_propagation_wait: 5,
                 &block
       unless enabled
-        @context.logger.info "No remote given; pull request generation disabled"
+        @context.logger.info "Pull request generation disabled"
         block.call
         return :disabled
       end
@@ -50,7 +51,7 @@ module Yoshi
       if @yoshi_utils.git_clean?
         pr_number = :unchanged
       else
-        pr_number = create_pr branch_name, remote, commit_message, pr_body
+        pr_number = create_pr branch_name, remote, commit_message, pr_body, extra_propagation_wait
         update_pr pr_number, labels, auto_approve, approval_token
       end
       finish_capture pr_number, branch_name, saved_branch_name
@@ -60,27 +61,31 @@ module Yoshi
 
     def start_capture branch_name
       @context.logger.info "Capturing changes for pull request"
-      raise Error, "Git checkout is not clean" unless @yoshi_utils.git_clean?
+      raise ::Yoshi::Error, "Git checkout is not clean" unless @yoshi_utils.git_clean?
       saved_branch_name = @yoshi_utils.git_current_branch
       @context.exec ["git", "switch", "-c", branch_name]
       saved_branch_name
     end
 
-    def create_pr branch_name, remote, commit_message, pr_body
+    def create_pr branch_name, remote, commit_message, pr_body, extra_propagation_wait
       commit_message ||= generate_default_commit_message
       pr_body ||= generate_default_pr_body
+
       @context.exec ["git", "add", "."], e: true
       @context.exec ["git", "commit", "-m", commit_message]
       @yoshi_utils.gh_without_standard_git_auth do
         @context.exec ["git", "push", "-u", remote, branch_name]
       end
+
       repo_name = @yoshi_utils.gh_repo_full_name
       cmd = ["gh", "pr", "create", "--repo", repo_name, "--title", commit_message, "--body", pr_body]
       output = @context.capture cmd, e: true
       puts output
       pr_number = output.split("\n").last.split("/").last
+
       # It sometimes takes a while for the new PR to propagate to GitHub's APIs
       @yoshi_utils.retry ["gh", "pr", "view", pr_number, "--repo", repo_name, "--json=number"]
+      sleep extra_propagation_wait
       pr_number
     end
 
@@ -88,9 +93,10 @@ module Yoshi
       labels = Array(labels)
       auto_approve = DEFAULT_AUTO_APPROVE if auto_approve == true
       return if labels.empty? && !auto_approve
+
+      repo_name = @yoshi_utils.gh_repo_full_name
       approval_token ||= @yoshi_utils.gh_cur_token
       @yoshi_utils.gh_with_token approval_token do
-        repo_name = @yoshi_utils.gh_repo_full_name
         unless labels.empty?
           cmd = ["gh", "issue", "edit", pr_number, "--repo", repo_name, "--add-label", labels.join(",")]
           @context.exec cmd, e: true
