@@ -152,7 +152,11 @@ module Yoshi
       end
     end
 
-    def gh_without_standard_git_auth
+    def gh_without_standard_git_auth if_auth_in_remote_url: nil
+      if if_auth_in_remote_url
+        remote_url = @context.capture(["git", "remote", "get-url", if_auth_in_remote_url], e: true, err: :null)
+        return yield unless remote_url =~ %r{^https://[\w:-]+@github\.com/}
+      end
       existing_auth = @context.capture(["git", "config", "--local", "--get-all",
                                         "http.https://github.com/.extraheader", "^AUTHORIZATION:"],
                                        e: false).split("\n")
