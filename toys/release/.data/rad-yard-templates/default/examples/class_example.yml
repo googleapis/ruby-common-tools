@@ -30,6 +30,10 @@ items:
 
   # The name of the gem. The cloudrad rake task will set this as ENV["CLOUDRAD_GEM_NAME"] before running yard
   module: google-cloud-vision-v1
+  
+  # The friendly API name and version for the gem. This will be set as ENV["CLOUDRAD_FRIENDLY_API_NAME"] before 
+  # running yard.
+  friendlyApiName: "Cloud Vision V1 API"
 
   # The name of the object. Other languages use this field, but changing/removing it
   # doesn't seem to have any affect on our output.
@@ -62,6 +66,7 @@ items:
   langs:
     - ruby
   module: google-cloud-vision-v1
+  friendlyApiName: "Cloud Vision V1 API"
   summary: "Configure the ImageAnnotator Client instance..." # Same as summary above
   type: method
   example: []
@@ -101,6 +106,7 @@ items:
   langs:
     - ruby
   module: google-cloud-vision-v1
+  friendlyApiName: "Cloud Vision V1 API"
   id: "#batch_annotate_images"
   summary: "Run image detection and annotation for a batch of images."
   type: method

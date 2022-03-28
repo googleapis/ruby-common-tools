@@ -19,6 +19,7 @@ desc "Build cloud-rad yardoc"
 flag :bundle
 flag :yardopts, "--yardopts=PATH", default: ".yardopts"
 flag :gem_name, "--gem-name=NAME"
+flag :friendly_api_name, "--friendly-api-name=NAME"
 
 include :exec, e: true
 include :gems, on_missing: :install
@@ -35,7 +36,7 @@ def run
   yardopts_content = File.read yardopts
   cmd = ["yard", "doc", "--no-yardopts"] + build_options(yardopts_content)
   cmd = ["bundle", "exec"] + cmd if bundle
-  env = { "CLOUDRAD_GEM_NAME" => gem_name }
+  env = { "CLOUDRAD_GEM_NAME" => gem_name, "CLOUDRAD_FRIENDLY_API_NAME" => friendly_api_name }
   exec cmd, env: env
   sanity_check
 end

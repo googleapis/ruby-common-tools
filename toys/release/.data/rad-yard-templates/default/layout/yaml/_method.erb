@@ -4,6 +4,7 @@
   langs:
     - ruby
   module: <%= ENV["CLOUDRAD_GEM_NAME"] %>
+  friendlyApiName: <%= ENV["CLOUDRAD_FRIENDLY_API_NAME"].to_s.inspect %>
   id: "<%= @method.path[@method.path.size - (@method.name.size + 1)..-1] %>"
   summary: "<%= pre_format @method.docstring, min_header: 4 %>"
   type: <%= @method.type %>
