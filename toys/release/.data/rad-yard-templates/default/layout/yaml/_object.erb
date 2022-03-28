@@ -4,6 +4,7 @@
   langs:
   - ruby
   module: <%= ENV["CLOUDRAD_GEM_NAME"] %>
+  friendlyApiName: <%= ENV["CLOUDRAD_FRIENDLY_API_NAME"].inspect %>
   id: <%= @object.name %>
   summary: "<%= pre_format @object.docstring, min_header: 2, toplevel_header: true %>"
   type: "<%= @object.type %>"
