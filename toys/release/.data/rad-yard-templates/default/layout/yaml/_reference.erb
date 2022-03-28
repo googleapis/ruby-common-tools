@@ -2,6 +2,7 @@
   fullName: <%= @reference.path %>
   name: <%= @reference.name %>
   module: <%= ENV["CLOUDRAD_GEM_NAME"] %>
+  friendlyApiName: <%= ENV["CLOUDRAD_FRIENDLY_API_NAME"] %>
   id: <%= @reference.name %>
   summary: "<%= pre_format @reference.docstring %>"
   parent: <%= @reference.parent %>
