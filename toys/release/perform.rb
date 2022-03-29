@@ -35,10 +35,14 @@ def run
   gem "gems", "~> 1.2"
   require "fileutils"
   require "gems"
+  require "json"
   Dir.chdir context_directory
   Dir.chdir base_dir if base_dir
   load_env
+  perform_release
+end
 
+def perform_release
   determine_packages.each do |name, version|
     releaser = Performer.new name,
                              last_version: version,
@@ -237,7 +241,7 @@ class Performer
         return
       end
       logger.info "**** Starting publish_rad for #{gem_name}"
-      cli.run(*tool_name[0..-2], "build-rad", "--gem-name", gem_name)
+      cli.run(*tool_name[0..-2], "build-rad", "--gem-name", gem_name, "--friendly-api-name", friendly_api_name)
       run_docuploader staging_bucket: rad_staging_bucket,
                       extra_docuploader_args: ["--destination-prefix", "docfx"],
                       dry_run: dry_run
@@ -316,6 +320,14 @@ class Performer
         logger.info "Configured rubygems api token of length #{rubygems_api_token.length}"
       end
       Gems::Client.new
+    end
+  end
+
+  def friendly_api_name
+    @friendly_api_name ||= begin
+      repo_metadata_path = File.join gem_dir, ".repo-metadata.json"
+      repo_metadata = JSON.parse File.read repo_metadata_path rescue {}
+      repo_metadata["name_pretty"] || gem_name
     end
   end
 
