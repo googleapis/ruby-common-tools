@@ -232,12 +232,21 @@ class Performer
 
   def publish_rad dry_run: false
     Dir.chdir gem_dir do
+      logger.info "**** Starting publish_rad for #{gem_name}"
       unless File.file? ".yardopts"
         logger.warn "**** No .yardopts file present. Skipping publish_rad for #{gem_name}"
         return
       end
-      logger.info "**** Starting publish_rad for #{gem_name}"
-      cli.run(*tool_name[0..-2], "build-rad", "--gem-name", gem_name)
+      if File.file? ".repo-metadata.json"
+        repo_metadata = JSON.parse File.read ".repo-metadata.json"
+        unless repo_metadata.key?("name_pretty")
+          logger.warn "**** No name_pretty attribute found in .repo-metadata.json for #{gem_name}."
+        end
+        cli.run(*tool_name[0..-2], "build-rad", "--gem-name", gem_name, "--friendly-api-name", repo_metadata["name_pretty"])
+      else
+        logger.warn "**** No .repo-metadata.json file found for #{gem_name}."
+        cli.run(*tool_name[0..-2], "build-rad", "--gem-name", gem_name)
+      end
       run_docuploader staging_bucket: rad_staging_bucket,
                       extra_docuploader_args: ["--destination-prefix", "docfx"],
                       dry_run: dry_run
