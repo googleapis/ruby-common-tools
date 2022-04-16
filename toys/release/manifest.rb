@@ -23,7 +23,7 @@ flag :use_fork, "--fork"
 flag :base_dir, "--base-dir=PATH"
 flag :release_type, "--release-type=TYPE", default: "ruby-yoshi"
 flag :repo_url, "--repo-url=NAME"
-flag :no_labels
+flag :skip_labeling
 flag :dry_run
 flag :delay, "--delay=SECS", default: 2, accept: Numeric
 flag :github_event_name, "--github-event-name=NAME"
@@ -95,7 +95,7 @@ def run_release_please package: nil, version: nil # rubocop:disable Metrics/Cycl
   cmd += ["--token", github_token] if github_token
   cmd += ["--path", package] if package
   cmd += ["--release-as", version] if version
-  cmd += ["--label="] if no_labels
+  cmd += ["--skip-labeling"] if skip_labeling
   cmd += ["--dry-run"] if dry_run
   cmd += ["--debug"] if verbosity.positive?
   log_cmd = "exec: #{cmd.inspect}"
