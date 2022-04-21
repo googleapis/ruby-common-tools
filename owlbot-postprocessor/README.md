@@ -4,7 +4,8 @@ This is the OwlBot postprocessor for Ruby. It is designed to work with
 [OwlBot](https://github.com/googleapis/repo-automation-bots/tree/main/packages/owl-bot)
 to regenerate [Ruby GAPIC clients](https://github.com/googleapis/google-cloud-ruby)
 by providing the logic to merge newly generated client code with an existing
-Ruby library.
+Ruby library. It is written in Ruby and unlike postprocessors for some other
+languages, does not use synthtool at all.
 
 ## Usage
 
@@ -43,7 +44,7 @@ This postprocessor will then, by default:
 * Create a file called `.owlbot-manifest.json` in the library directory that
   tracks the list of generated files for the previous step.
 
-Note: This preprocessor is intended to be used with a "staging" strategy for
+Note: This postprocessor is intended to be used with a "staging" strategy for
 OwlBot. That is, OwlBot itself copies newly generated files into a staging
 directory, and the postprocessor is responsible for moving the files from there
 into the final location. As a result, the `deep-remove-regex` and
@@ -99,6 +100,7 @@ need to remove the existing modifiers from the pipeline. The existing default
 modifiers are named:
 
 * `preserve_existing_copyright_years`
+* `preserve_repo_metadata_release_levels`
 * `prevent_overwrite_of_existing_changelog_file`
 * `prevent_overwrite_of_existing_gem_version_file`
 
@@ -120,9 +122,9 @@ For detailed reference documentation on the `OwlBot` module, see the file
 
 ## Development
 
-The Ruby preprocessor lives in the GitHub repository
+The Ruby postprocessor lives in the GitHub repository
 https://github.com/googleapis/ruby-common-tools in the directory
-`/owlbot-preprocessor`. Its implementation code is in the `lib` subdirectory,
+`/owlbot-postprocessor`. Its implementation code is in the `lib` subdirectory,
 and tests are provided in the `test` subdirectory.
 
 ### Development tools
@@ -130,10 +132,10 @@ and tests are provided in the `test` subdirectory.
 The `toys` gem is used to run tests and other tasks. Install it using
 `gem install toys`.
 
-Under the `/owlbot-preprocessor` directory, the following tools are available:
+Under the `/owlbot-postprocessor` directory, the following tools are available:
 
-* `toys build` : Builds a local image of the preprocessor.
-* `toys test` : Runs the unit tests. Requires a local preprocessor image.
+* `toys build` : Builds a local image of the postprocessor.
+* `toys test` : Runs the unit tests. Requires a local postprocessor image.
 * `toys rubocop` : Runs rubocop lint and style checks.
 * `toys ci` : Runs both test and rubocop.
 

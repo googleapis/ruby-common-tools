@@ -27,9 +27,6 @@ jobs:
           if [ -z "$RELEASE_PLEASE_DISABLE" ]; then
             npx release-please github-release \
               --repo-url=googleapis/ruby-common-tools \
-              --package-name=owlbot-postprocessor \
               --path=owlbot-postprocessor \
-              --release-type=ruby \
-              --monorepo-tags \
               --token=$GITHUB_TOKEN
           fi
