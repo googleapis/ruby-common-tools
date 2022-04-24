@@ -290,9 +290,9 @@ module OwlBot
       name ||= "preserve_existing_copyright_years"
       modifier path: path, name: name do |src, dest|
         if src && dest
-          copyright_regex = /^# Copyright (\d{4}) Google LLC$/
-          match = copyright_regex.match dest
-          src = src.sub copyright_regex, "# Copyright #{match[1]} Google LLC" if match
+          regex = /^# Copyright (\d{4}) Google LLC$/
+          match = regex.match dest
+          src = src.sub regex, "# Copyright #{match[1]} Google LLC" if match
         end
         src
       end
@@ -310,9 +310,29 @@ module OwlBot
       name ||= "preserve_repo_metadata_release_levels"
       modifier path: path, name: name do |src, dest|
         if src && dest
-          copyright_regex = /"release_level": "(\w+)"/
-          match = copyright_regex.match dest
-          src = src.sub copyright_regex, "\"release_level\": \"#{match[1]}\"" if match
+          regex = /"release_level": "(\w+)"/
+          match = regex.match dest
+          src = src.sub regex, "\"release_level\": \"#{match[1]}\"" if match
+        end
+        src
+      end
+    end
+
+    ##
+    # A convenience method that installs a modifier preserving gem release
+    # `version` fields in existing snippet metadata files.
+    #
+    # @param name [String] Optional name for the modifier to add. Defaults to
+    #     `"preserve_snippet_metadata_release_versions"`.
+    #
+    def preserve_snippet_metadata_release_versions name: nil
+      path = [%r{^snippets/snippet_metadata_[\w.]+\.json$}]
+      name ||= "preserve_snippet_metadata_release_versions"
+      modifier path: path, name: name do |src, dest|
+        if src && dest
+          regex = /"version": "(\d+\.\d+\.\d+)"/
+          match = regex.match dest
+          src = src.sub regex, "\"version\": \"#{match[1]}\"" if match
         end
         src
       end
@@ -344,6 +364,8 @@ module OwlBot
     # * A modifier named `"preserve_repo_metadata_release_levels"` which
     #   ensures the `"release_level"` field of `.repo-metadata.json` files is
     #   not modified.
+    # * A modifier named `"preserve_snippet_metadata_release_versions"` which
+    #   ensures the `"version"` field of snippet metadata files is not modified.
     # * A modifier named `"prevent_overwrite_of_existing_changelog_file"` which
     #   ensures that an existing changelog file is not replaced by the empty
     #   generated changelog.
@@ -359,6 +381,7 @@ module OwlBot
     def install_default_modifiers
       preserve_existing_copyright_years
       preserve_repo_metadata_release_levels
+      preserve_snippet_metadata_release_versions
       prevent_overwrite_of_existing "CHANGELOG.md",
                                     name: "prevent_overwrite_of_existing_changelog_file"
       prevent_overwrite_of_existing "lib/#{@impl.gem_name.tr '-', '/'}/version.rb",
