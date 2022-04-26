@@ -263,6 +263,63 @@ describe OwlBot do
     assert_gem_file "hello/something-else.json", incoming_content
   end
 
+  it "preserves gem version field while allowing changes to api version field" do
+    orig_content = <<~CONTENT
+      {
+        "client_library": {
+          "name": "google-cloud-language-v1",
+          "version": "1.2.3",
+          "language": "RUBY",
+          "apis": [
+            {
+              "id": "google.cloud.language.v1",
+              "version": "v1"
+            }
+          ]
+        }
+      }
+    CONTENT
+    incoming_content = <<~CONTENT
+      {
+        "client_library": {
+          "name": "google-cloud-language-v2",
+          "version": "0.0.0",
+          "language": "RUBY",
+          "apis": [
+            {
+              "id": "google.cloud.language.v2",
+              "version": "v2"
+            }
+          ]
+        }
+      }
+    CONTENT
+    resulting_content = <<~CONTENT
+      {
+        "client_library": {
+          "name": "google-cloud-language-v2",
+          "version": "1.2.3",
+          "language": "RUBY",
+          "apis": [
+            {
+              "id": "google.cloud.language.v2",
+              "version": "v2"
+            }
+          ]
+        }
+      }
+    CONTENT
+    create_gem_file "snippets/snippet_metadata_my.gem.json", orig_content
+    create_gem_file "snippets/something-else.json", orig_content
+    create_staging_file "snippets/snippet_metadata_my.gem.json", incoming_content
+    create_staging_file "snippets/something-else.json", incoming_content
+
+    invoke_owlbot
+
+    assert_gem_file "snippets/snippet_metadata_my.gem.json", resulting_content
+    assert_gem_file "snippets/something-else.json", incoming_content
+  end
+
   it "deals with types changing" do
     create_gem_file "hello", "hello world\n"
     create_gem_file "foo/bar.rb", "puts 'bar'\n"
