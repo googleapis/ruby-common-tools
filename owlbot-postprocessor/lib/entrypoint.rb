@@ -15,17 +15,27 @@
 # limitations under the License.
 
 require "toys-core"
+require "toys/standard_mixins/exec"
 require "logger"
 require_relative "owlbot"
+require_relative "owlbot_releases"
 
 cli = ::Toys::CLI.new base_level: ::Logger::INFO
 
-cli.add_config_block do
+cli.add_config_block do # rubocop:disable Metrics/BlockLength
   desc "Ruby postprocessor for OwlBot"
 
   flag :gem_name, "--gem=NAME"
+  flag :all_gems
+  flag :owlbot_tasks, "--[no-]owlbot-tasks", default: true
+  flag :release_tasks, "--[no-]release-tasks", default: true
 
   def run
+    handle_owlbot_tasks if owlbot_tasks
+    handle_release_tasks if release_tasks
+  end
+
+  def handle_owlbot_tasks
     if gem_name
       OwlBot.entrypoint gem_name: gem_name, logger: logger
     else
@@ -34,6 +44,18 @@ cli.add_config_block do
   rescue OwlBot::Error => e
     logger.error e.message
     exit 1
+  end
+
+  def handle_release_tasks
+    exec_service = self[Toys::StandardMixins::Exec::KEY]
+    releases = OwlBotReleases.new logger: logger, exec_service: exec_service
+    if gem_name
+      releases.single_gem gem_name
+    elsif all_gems
+      releases.all_gems
+    else
+      releases.changed_gems
+    end
   end
 end
 

@@ -19,3 +19,4 @@ require "minitest/focus"
 require "minitest/rg"
 
 require "owlbot"
+require "owlbot_releases"
