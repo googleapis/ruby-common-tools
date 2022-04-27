@@ -432,7 +432,12 @@ module OwlBot
       @impl.sanity_check
       install_default_modifiers
       if @impl.script_path
-        load @impl.script_path
+        save_dir = ::Dir.getwd
+        begin
+          load @impl.script_path
+        ensure
+          ::Dir.chdir save_dir
+        end
       else
         @impl.do_move
       end
