@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.5.1 (2022-04-27)
+
+#### Bug Fixes
+
+* Preserve working directory if an owlbot script changes it
+
 ### 0.5.0 (2022-04-27)
 
 #### Features
