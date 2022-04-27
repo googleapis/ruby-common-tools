@@ -16,6 +16,7 @@
 
 require "fileutils"
 require "json"
+require "toys/utils/exec"
 require_relative "version"
 
 ##
@@ -330,9 +331,8 @@ module OwlBot
       name ||= "preserve_snippet_metadata_release_versions"
       modifier path: path, name: name do |src, dest|
         if src && dest
-          regex = /"version": "(\d+\.\d+\.\d+)"/
-          match = regex.match dest
-          src = src.sub regex, "\"version\": \"#{match[1]}\"" if match
+          match = /"version": "(\d+\.\d+\.\d+)"/.match dest
+          src = src.sub(/"version": "(\d+\.\d+\.\d+)?"/, "\"version\": \"#{match[1]}\"") if match
         end
         src
       end
@@ -571,6 +571,7 @@ module OwlBot
       @next_generated_files = []
       @next_static_files = []
       @content_modifiers = []
+      @exec_service = ::Toys::Utils::Exec.new
     end
 
     attr_reader :repo_dir
@@ -585,6 +586,7 @@ module OwlBot
     attr_reader :next_generated_files
     attr_reader :next_static_files
     attr_accessor :logger
+    attr_accessor :exec_service
 
     def sanity_check
       error "No staging directory #{staging_dir}" unless ::File.directory? staging_dir
@@ -832,7 +834,8 @@ module OwlBot
     end
 
     def gitignored? path
-      !`git check-ignore #{::File.join gem_name, path.local_path}`.empty?
+      full_path = ::File.join gem_name, path.local_path
+      !exec_service.capture(["git", "check-ignore", full_path]).empty?
     end
 
     def error message

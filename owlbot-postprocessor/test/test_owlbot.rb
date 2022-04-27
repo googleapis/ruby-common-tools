@@ -18,7 +18,6 @@ require "helper"
 require "fileutils"
 
 describe OwlBot do
-  let(:base_dir) { ::File.dirname __dir__ }
   let(:image_name) { "owlbot-postprocessor-test" }
   let(:manifest_file_name) { ".owlbot-manifest.json" }
   let(:gem_name) { "my-gem" }
@@ -28,12 +27,26 @@ describe OwlBot do
   let(:staging_dir) { ::File.join staging_root_dir, gem_name }
   let(:manifest_path) { ::File.join gem_dir, manifest_file_name }
   let(:manifest) { ::JSON.load_file manifest_path }
+  let(:exec_service) { ::Toys::Utils::Exec.new }
+
+  def run_process cmd, output: false
+    result = exec_service.exec cmd, out: :capture, err: :capture
+    if output
+      puts "**** OUT ****"
+      puts result.captured_out
+      puts "**** ERR ****"
+      puts result.captured_err
+    end
+    result.success?
+  end
 
   before do
     ::FileUtils.rm_rf repo_dir
     ::FileUtils.mkdir_p repo_dir
     ::Dir.chdir repo_dir do
-      `git init`
+      run_process ["git", "init"]
+      run_process ["git", "commit", "--allow-empty", "-m", "commit 1"]
+      run_process ["git", "commit", "--allow-empty", "-m", "commit 2"]
     end
     ::FileUtils.mkdir_p gem_dir
     ::FileUtils.mkdir_p staging_dir
@@ -283,7 +296,7 @@ describe OwlBot do
       {
         "client_library": {
           "name": "google-cloud-language-v2",
-          "version": "0.0.0",
+          "version": "",
           "language": "RUBY",
           "apis": [
             {
@@ -521,12 +534,13 @@ describe OwlBot do
         "-v", "#{repo_dir}:/repo",
         "-w", "/repo",
         image_name,
+        "--no-release-tasks",
         "-qq"
       ] + args
-      assert system cmd.join(" ")
+      assert run_process cmd
     end
 
-    it "copies files using the image" do
+    it "copies files" do
       create_gem_file "static.txt", "here before\n"
       create_staging_file "hello.txt", "hello world\n"
       create_staging_file "lib/hello.rb", "puts 'hello'\n"
@@ -544,7 +558,7 @@ describe OwlBot do
       assert_equal ["static.txt"], manifest["static"]
     end
 
-    it "supports selecting a specific gem using the image" do
+    it "supports selecting a specific gem" do
       create_gem_file "hello.txt", "hello world\n"
       create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
       create_staging_file "hello.txt", "hello again\n"
