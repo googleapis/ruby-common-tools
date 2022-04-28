@@ -207,6 +207,14 @@ describe OwlBotReleases do
     assert_snippet_metadata expected_library_version: "1.2.4", expected_api_version: "v1"
   end
 
+  it "updates the snippet metadata version to blank from an existing version" do
+    create_gemspec version: "0.0.1"
+    create_snippet_metadata version: "1.2.3"
+    assert_snippet_metadata expected_library_version: "1.2.3", expected_api_version: "v1"
+    invoke_single_gem
+    assert_snippet_metadata expected_library_version: "", expected_api_version: "v1"
+  end
+
   it "does not touch non-snippet-metadata files" do
     create_gemspec version: "1.2.4"
     create_snippet_metadata version: "1.2.3", path: "wtf.json"
