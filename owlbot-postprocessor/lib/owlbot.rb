@@ -436,7 +436,7 @@ module OwlBot
         begin
           load @impl.script_path
         ensure
-          ::Dir.chdir save_dir
+          ::Dir.chdir save_dir unless save_dir == ::Dir.getwd
         end
       else
         @impl.do_move

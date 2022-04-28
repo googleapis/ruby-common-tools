@@ -95,6 +95,7 @@ class OwlBotReleases
   def update_snippetgen_metadata gem_name, gem_version
     ::Dir.glob "#{gem_name}/snippets/snippet_metadata_*.json" do |path|
       metadata = ::File.read path
+      gem_version = "" if gem_version.start_with? "0.0."
       updated_metadata = metadata.sub(/"version": "(\d+\.\d+\.\d+)?"/, "\"version\": \"#{gem_version}\"")
       next if metadata == updated_metadata
       ::File.open path, "w" do |file|
