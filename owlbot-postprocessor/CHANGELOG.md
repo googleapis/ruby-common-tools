@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.5.2 (2022-04-28)
+
+#### Bug Fixes
+
+* Set snippet metadata client version to blank pre-0.1
+
 ### 0.5.1 (2022-04-27)
 
 #### Bug Fixes
