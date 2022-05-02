@@ -204,6 +204,15 @@ module OwlBot
     end
 
     ##
+    # The exec service in use.
+    #
+    # @return [Toys::Utils::Exec]
+    #
+    def exec_service
+      @impl.exec_service
+    end
+
+    ##
     # Set the logger.
     #
     # @param [Logger] new_logger
@@ -389,6 +398,29 @@ module OwlBot
     end
 
     ##
+    # Execute a toys tool.
+    #
+    # Pass the tool name and arguments, and any options recognized by the Toys
+    # exec util. For more info on arguments and return values, see
+    # [Toys::Utils::Exec#exec](https://dazuma.github.io/toys/gems/toys/latest/Toys/Utils/Exec.html#exec-instance_method).
+    #
+    # @param cmd [String,Array<String>] The tool name and arguments.
+    # @param opts [keywords] The command options.
+    # @yieldparam controller [Toys::Utils::Exec::Controller] A controller for
+    #     the subprocess streams.
+    #
+    # @return [Toys::Utils::Exec::Controller] The subprocess controller, if the
+    #     process is running in the background.
+    # @return [Toys::Utils::Exec::Result] The result, if the process ran in the
+    #     foreground.
+    #
+    def toys cmd, **opts, &block
+      @toys_bin_path ||= `which toys`.strip
+      cmd = [@toys_bin_path] + cmd
+      @impl.exec_service.exec cmd, **opts, &block
+    end
+
+    ##
     # Move files from the staging directory to the gem directory.
     # Any customizations such as installing {OwlBot.modifier} functions should
     # be done prior to calling this.
@@ -427,8 +459,8 @@ module OwlBot
     # ---- Private implementation below this point ----
 
     # @private
-    def entrypoint logger: nil, gem_name: nil
-      @impl = Impl.new logger, gem_name
+    def entrypoint logger: nil, exec_service: nil, gem_name: nil
+      @impl = Impl.new logger, exec_service, gem_name
       @impl.sanity_check
       install_default_modifiers
       if @impl.script_path
@@ -446,7 +478,7 @@ module OwlBot
     end
 
     # @private
-    def multi_entrypoint logger: nil
+    def multi_entrypoint logger: nil, exec_service: nil
       unless ::File.directory? STAGING_ROOT_NAME
         logger&.warn "No staging root dir #{STAGING_ROOT_NAME}. Nothing for the Ruby postprocessor to do."
         return self
@@ -458,7 +490,7 @@ module OwlBot
       end
       logger&.info "Multi-entrypoint found staging directories: #{children}"
       children.each do |child|
-        entrypoint logger: logger, gem_name: child
+        entrypoint logger: logger, exec_service: exec_service, gem_name: child
       end
       self
     end
@@ -563,8 +595,9 @@ module OwlBot
 
   # @private
   class Impl
-    def initialize logger, gem_name
+    def initialize logger, exec_service, gem_name
       @logger = logger
+      @exec_service = exec_service || ::Toys::Utils::Exec.new
       @repo_dir = ::Dir.getwd
       @staging_root_dir = ::File.join @repo_dir, STAGING_ROOT_NAME
       @gem_name = gem_name || find_staged_gem_name(@staging_root_dir)
@@ -576,7 +609,6 @@ module OwlBot
       @next_generated_files = []
       @next_static_files = []
       @content_modifiers = []
-      @exec_service = ::Toys::Utils::Exec.new
     end
 
     attr_reader :repo_dir
@@ -590,8 +622,8 @@ module OwlBot
     attr_reader :content_modifiers
     attr_reader :next_generated_files
     attr_reader :next_static_files
+    attr_reader :exec_service
     attr_accessor :logger
-    attr_accessor :exec_service
 
     def sanity_check
       error "No staging directory #{staging_dir}" unless ::File.directory? staging_dir

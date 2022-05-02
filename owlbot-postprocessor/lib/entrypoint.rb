@@ -36,10 +36,11 @@ cli.add_config_block do # rubocop:disable Metrics/BlockLength
   end
 
   def handle_owlbot_tasks
+    exec_service = self[Toys::StandardMixins::Exec::KEY]
     if gem_name
-      OwlBot.entrypoint gem_name: gem_name, logger: logger
+      OwlBot.entrypoint gem_name: gem_name, logger: logger, exec_service: exec_service
     else
-      OwlBot.multi_entrypoint logger: logger
+      OwlBot.multi_entrypoint logger: logger, exec_service: exec_service
     end
   rescue OwlBot::Error => e
     logger.error e.message

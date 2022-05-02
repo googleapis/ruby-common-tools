@@ -599,5 +599,27 @@ describe OwlBot do
 
       invoke_image
     end
+
+    it "runs toys" do
+      create_gem_file ".toys.rb", <<~RUBY
+        tool "foo" do
+          def run
+            File.open "foo.txt", "w" do |file|
+              file.puts "foos!"
+            end
+          end
+        end
+      RUBY
+      create_gem_file ".owlbot.rb", <<~RUBY
+        OwlBot.toys ["foo"], chdir: OwlBot.gem_dir
+        OwlBot.move_files
+      RUBY
+      create_staging_file "hello.txt", "hello world\n"
+
+      invoke_image
+
+      assert_gem_file "foo.txt", "foos!\n"
+      assert_gem_file "hello.txt", "hello world\n"
+    end
   end
 end
