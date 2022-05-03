@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.6.1 (2022-05-03)
+
+#### Bug Fixes
+
+* Set up writable directories for bundler installs and toys cache
+
 ### 0.6.0 (2022-05-03)
 
 #### Features
