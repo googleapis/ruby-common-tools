@@ -17,5 +17,9 @@ RUN mkdir /ruby-postprocessor && gem install toys
 WORKDIR /ruby-postprocessor
 COPY lib/*.rb /ruby-postprocessor/
 COPY *.md /ruby-postprocessor/
+RUN mkdir -p /user-home/.cache && mkdir -p /user-home/.bundle && chmod -R 777 /user-home
+ENV HOME=/user-home \
+    XDG_CACHE_HOME=/user-home/.cache \
+    BUNDLE_PATH=/user-home/.bundle
 ENTRYPOINT ["ruby", "/ruby-postprocessor/entrypoint.rb"]
 CMD []

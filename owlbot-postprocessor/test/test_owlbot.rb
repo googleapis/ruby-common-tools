@@ -601,9 +601,18 @@ describe OwlBot do
     end
 
     it "runs toys" do
+      create_gem_file "Gemfile", <<~RUBY
+        source "https://rubygems.org"
+        gem "minitest", "~> 5.14"
+      RUBY
       create_gem_file ".toys.rb", <<~RUBY
         tool "foo" do
+          # Make sure bundler has permissions to install in the container
+          include :bundler, on_missing: :install
+          include :git_cache
           def run
+            # Make sure git_cache has permissions to the cache directory
+            git_cache.get "https://github.com/dazuma/toys"
             File.open "foo.txt", "w" do |file|
               file.puts "foos!"
             end
