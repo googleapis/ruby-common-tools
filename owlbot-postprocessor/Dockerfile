@@ -13,7 +13,7 @@
 # limitations under the License.
 
 FROM ruby:3.0-buster
-RUN mkdir /ruby-postprocessor && gem install toys-core
+RUN mkdir /ruby-postprocessor && gem install toys
 WORKDIR /ruby-postprocessor
 COPY lib/*.rb /ruby-postprocessor/
 COPY *.md /ruby-postprocessor/
