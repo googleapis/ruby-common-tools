@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.6.0 (2022-05-03)
+
+#### Features
+
+* Support toys in the owlbot postprocessor
+
 ### 0.5.2 (2022-04-28)
 
 #### Bug Fixes
