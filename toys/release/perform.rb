@@ -236,6 +236,10 @@ class Performer
 
   def publish_rad dry_run: false
     Dir.chdir gem_dir do
+      if repo_metadata["is_cloud"] == false
+        logger.info "**** Disabled publish_rad for #{gem_name} because repo-metadata sets is_cloud to false."
+        return
+      end
       unless File.file? ".yardopts"
         logger.warn "**** No .yardopts file present. Skipping publish_rad for #{gem_name}"
         return
@@ -323,10 +327,15 @@ class Performer
     end
   end
 
+  def repo_metadata
+    @repo_metadata ||= begin
+      repo_metadata_path = File.join gem_dir, ".repo-metadata.json"
+      JSON.parse File.read repo_metadata_path rescue {}
+    end
+  end
+
   def friendly_api_name
     @friendly_api_name ||= begin
-      repo_metadata_path = File.join gem_dir, ".repo-metadata.json"
-      repo_metadata = JSON.parse File.read repo_metadata_path rescue {}
       repo_metadata["name_pretty"] || gem_name
     end
   end
