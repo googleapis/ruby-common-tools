@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.7.0 (2022-05-17)
+
+#### Features
+
+* Provide a Ruby content tool
+
 ### 0.6.1 (2022-05-03)
 
 #### Bug Fixes
