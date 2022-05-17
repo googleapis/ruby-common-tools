@@ -495,6 +495,32 @@ describe OwlBot do
     assert_gem_file "lib/foo.rb", "puts 'baz'\n", gem: "gem2"
   end
 
+  it "supports ruby_content" do
+    create_gem_file ".owlbot.rb", <<~RUBY
+      OwlBot.modifier path: "lib/foo.rb" do |src|
+        OwlBot.ruby_content(src).select_block("def bar").delete
+      end
+      OwlBot.move_files
+    RUBY
+    create_staging_file "lib/foo.rb", <<~RUBY
+      def foo
+        puts "foo"
+      end
+
+      def bar
+        puts "bar"
+      end
+    RUBY
+
+    invoke_owlbot_multi
+
+    assert_gem_file "lib/foo.rb", <<~RUBY
+      def foo
+        puts "foo"
+      end
+    RUBY
+  end
+
   it "errors if there are multiple staging directories and no explicit gem" do
     create_gem_file "hello.txt", "hello world\n"
     create_gem_file "hello.txt", "hello world\n", gem: "another-gem"
@@ -592,6 +618,33 @@ describe OwlBot do
 
       assert_gem_file "lib/foo.rb", "puts 'bar'\n", gem: "gem1"
       assert_gem_file "lib/foo.rb", "puts 'baz'\n", gem: "gem2"
+    end
+
+    it "supports ruby_content" do
+      create_gem_file ".owlbot.rb", <<~RUBY
+        OwlBot.modifier path: "lib/foo.rb" do |src|
+          src2 = OwlBot.ruby_content(src).select_block("def bar").delete
+          OwlBot.ruby_content(src2).select_block("module Bar").delete
+        end
+        OwlBot.move_files
+      RUBY
+      create_staging_file "lib/foo.rb", <<~RUBY
+        def foo
+          puts "foo"
+        end
+
+        def bar
+          puts "bar"
+        end
+      RUBY
+
+      invoke_image
+
+      assert_gem_file "lib/foo.rb", <<~RUBY
+        def foo
+          puts "foo"
+        end
+      RUBY
     end
 
     it "does not fail if there is no staging root dir" do

@@ -16,6 +16,7 @@ FROM ruby:3.0-buster
 RUN mkdir /ruby-postprocessor && gem install toys
 WORKDIR /ruby-postprocessor
 COPY lib/*.rb /ruby-postprocessor/
+COPY lib/owlbot /ruby-postprocessor/owlbot
 COPY *.md /ruby-postprocessor/
 RUN mkdir -p /user-home/.cache && mkdir -p /user-home/.bundle && chmod -R 777 /user-home
 ENV HOME=/user-home \

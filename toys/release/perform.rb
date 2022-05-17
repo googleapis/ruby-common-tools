@@ -335,9 +335,7 @@ class Performer
   end
 
   def friendly_api_name
-    @friendly_api_name ||= begin
-      repo_metadata["name_pretty"] || gem_name
-    end
+    @friendly_api_name ||= repo_metadata["name_pretty"] || gem_name
   end
 
   def isolate_bundle
