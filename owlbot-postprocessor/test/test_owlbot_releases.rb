@@ -72,7 +72,7 @@ describe OwlBotReleases do
     create_gem_file gem_name: gem_name, path: "#{gem_name}.gemspec", content: content
   end
 
-  def create_repo_metadata release_level: "unknown", gem_name: nil, path: nil
+  def create_repo_metadata release_level: "unreleased", gem_name: nil, path: nil
     gem_name ||= default_gem_name
     path ||= repo_metadata_file_name
     content = <<~CONTENT
@@ -163,7 +163,7 @@ describe OwlBotReleases do
   it "updates repo metadata to stable" do
     create_gemspec version: "1.2.3"
     create_repo_metadata
-    assert_repo_metadata "unknown"
+    assert_repo_metadata "unreleased"
     invoke_single_gem
     assert_repo_metadata "stable"
   end
@@ -171,24 +171,24 @@ describe OwlBotReleases do
   it "updates repo metadata to preview" do
     create_gemspec version: "0.2.3"
     create_repo_metadata
-    assert_repo_metadata "unknown"
+    assert_repo_metadata "unreleased"
     invoke_single_gem
     assert_repo_metadata "preview"
   end
 
-  it "updates repo metadata to unknown" do
+  it "updates repo metadata to unreleased" do
     create_gemspec version: "0.0.1"
     create_repo_metadata release_level: "preview"
     assert_repo_metadata "preview"
     invoke_single_gem
-    assert_repo_metadata "unknown"
+    assert_repo_metadata "unreleased"
   end
 
   it "does not touch non-repo-metadata files" do
     create_gemspec version: "1.2.3"
     create_repo_metadata path: "blah.json"
     invoke_single_gem
-    assert_repo_metadata "unknown", path: "blah.json"
+    assert_repo_metadata "unreleased", path: "blah.json"
   end
 
   it "updates the snippet metadata version from blank" do
@@ -252,7 +252,7 @@ describe OwlBotReleases do
     git_commit
     invoke_changed_gems
     assert_repo_metadata "stable", gem_name: "my-gem1"
-    assert_repo_metadata "unknown", gem_name: "my-gem2"
+    assert_repo_metadata "unreleased", gem_name: "my-gem2"
     assert_snippet_metadata expected_library_version: "1.0.0", gem_name: "my-gem1"
     assert_snippet_metadata expected_library_version: "0.4.5", gem_name: "my-gem2"
   end
@@ -287,7 +287,7 @@ describe OwlBotReleases do
       invoke_image
 
       assert_repo_metadata "stable", gem_name: "my-gem1"
-      assert_repo_metadata "unknown", gem_name: "my-gem2"
+      assert_repo_metadata "unreleased", gem_name: "my-gem2"
       assert_snippet_metadata expected_library_version: "1.0.0", gem_name: "my-gem1"
       assert_snippet_metadata expected_library_version: "0.4.5", gem_name: "my-gem2"
     end
@@ -321,7 +321,7 @@ describe OwlBotReleases do
       invoke_image "--gem=my-gem1"
 
       assert_repo_metadata "stable", gem_name: "my-gem1"
-      assert_repo_metadata "unknown", gem_name: "my-gem2"
+      assert_repo_metadata "unreleased", gem_name: "my-gem2"
       assert_snippet_metadata expected_library_version: "1.0.0", gem_name: "my-gem1"
       assert_snippet_metadata expected_library_version: "0.4.5", gem_name: "my-gem2"
     end
