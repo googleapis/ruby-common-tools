@@ -75,7 +75,7 @@ class OwlBotReleases
   def update_repo_metadata gem_name, gem_version
     release_level =
       if gem_version.start_with? "0.0."
-        "unknown"
+        "unreleased"
       elsif gem_version.start_with? "0."
         "preview"
       else
