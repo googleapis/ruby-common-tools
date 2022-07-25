@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.7.1 (2022-07-25)
+
+#### Bug Fixes
+
+* Change default release level from unknown to unreleased ([#101](https://github.com/googleapis/ruby-common-tools/issues/101)) 
+
 ### 0.7.0 (2022-05-17)
 
 #### Features
