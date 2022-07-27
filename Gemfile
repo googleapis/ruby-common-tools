@@ -1,3 +1,3 @@
 source "https://rubygems.org"
 
-gem "google-style", "~> 1.25.1"
+gem "google-style", "~> 1.26.0"
