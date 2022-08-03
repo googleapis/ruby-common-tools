@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.8.0 (2022-08-03)
+
+#### Features
+
+* Tools for creating multi-wrappers ([#104](https://github.com/googleapis/ruby-common-tools/issues/104)) 
+
 ### 0.7.1 (2022-07-25)
 
 #### Bug Fixes
