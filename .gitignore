@@ -5,3 +5,4 @@ Gemfile.lock
 .bundle/
 .vagrant/
 .yardoc/
+/tmp/
