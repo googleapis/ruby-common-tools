@@ -381,7 +381,7 @@ module OwlBot
           path_info path, "staged file#{label} identical to existing file"
         else
           ::FileUtils.cp path.src_path, path.dest_path
-          ::File.open(path.dest_path, "w") { |file| file.write content } unless content == path.src_content
+          ::File.write path.dest_path, content unless content == path.src_content
           path_info path, "moved staged file#{label}"
         end
         (path.src_content ? @next_generated_files : @next_static_files) << path.local_path

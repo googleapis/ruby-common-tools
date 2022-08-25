@@ -86,9 +86,7 @@ class OwlBotReleases
     metadata = ::File.read path
     updated_metadata = metadata.sub(/"release_level": "\w+"/, "\"release_level\": \"#{release_level}\"")
     return if metadata == updated_metadata
-    ::File.open path, "w" do |file|
-      file.write updated_metadata
-    end
+    ::File.write path, updated_metadata
     logger&.info "Updated #{path}"
   end
 
@@ -98,9 +96,7 @@ class OwlBotReleases
       gem_version = "" if gem_version.start_with? "0.0."
       updated_metadata = metadata.sub(/"version": "(\d+\.\d+\.\d+)?"/, "\"version\": \"#{gem_version}\"")
       next if metadata == updated_metadata
-      ::File.open path, "w" do |file|
-        file.write updated_metadata
-      end
+      ::File.write path, updated_metadata
       logger&.info "Updated #{path}"
     end
   end

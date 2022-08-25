@@ -343,7 +343,7 @@ module OwlBot
           if before.end_with? "\n\n"
             before = before.chop
           elsif after.start_with? "\n"
-            after = after[1..-1]
+            after = after[1..]
           end
         end
         ["", before, after]

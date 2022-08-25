@@ -56,9 +56,7 @@ describe OwlBotReleases do
     gem_name ||= default_gem_name
     path = ::File.join repo_dir, gem_name, path
     ::FileUtils.mkdir_p ::File.dirname path
-    ::File.open path, "w" do |file|
-      file.write content
-    end
+    ::File.write path, content
   end
 
   def create_gemspec version:, gem_name: nil
