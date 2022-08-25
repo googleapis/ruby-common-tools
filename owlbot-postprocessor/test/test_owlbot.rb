@@ -69,9 +69,7 @@ describe OwlBot do
   def create_dir_file dir, path, content
     path = ::File.join dir, path
     ::FileUtils.mkdir_p ::File.dirname path
-    ::File.open path, "w" do |file|
-      file.write content
-    end
+    ::File.write path, content
   end
 
   def create_staging_symlink path, target, gem: nil
@@ -95,9 +93,7 @@ describe OwlBot do
       "generated" => generated,
       "static" => static
     }
-    ::File.open manifest_path, "w" do |file|
-      file.write ::JSON.generate manifest
-    end
+    ::File.write manifest_path, ::JSON.generate(manifest)
   end
 
   def assert_gem_file path, content, gem: nil
