@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+toys_version! "~> 0.14"
+
 desc "Run CI checks"
 
 CHECKS = [:test, :rubocop]
@@ -50,13 +52,7 @@ tool "build" do
   def run
     ::Dir.chdir context_directory
     ::Dir.chdir "owlbot-postprocessor" do
-      cmd = ["toys", "build"]
-      if verbosity > 0
-        cmd << "-#{'v' * verbosity}"
-      elsif verbosity < 0
-        cmd << "-#{'q' * (-verbosity)}"
-      end
-      exec cmd
+      exec ["toys", "build"] + verbosity_flags
     end
   end
 end
