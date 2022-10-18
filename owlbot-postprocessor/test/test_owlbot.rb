@@ -317,7 +317,7 @@ describe OwlBot do
       assert_gem_file "hello/.repo-metadata.json", resulting_content
     end
 
-    it "sets the library_type to auto if there are handwritten files" do
+    it "sets the library_type to combo if there are handwritten files" do
       incoming_content = <<~CONTENT
         {
             "library_type": "unknown",
