@@ -272,6 +272,74 @@ describe OwlBot do
     assert_gem_file "hello/something-else.json", incoming_content
   end
 
+  it "sets the library_type to manual for a wrapper gem" do
+    incoming_content = <<~CONTENT
+      {
+          "library_type": "unknown",
+          "ruby-rulez": "yeah!"
+      }
+    CONTENT
+    resulting_content = <<~CONTENT
+      {
+          "library_type": "GAPIC_MANUAL",
+          "ruby-rulez": "yeah!"
+      }
+    CONTENT
+
+    create_staging_file "hello/.repo-metadata.json", incoming_content
+
+    invoke_owlbot
+
+    assert_gem_file "hello/.repo-metadata.json", resulting_content
+  end
+
+  describe "versioned gem name" do
+    let(:gem_name) { "my-gem-v1" }
+
+    it "sets the library_type to auto if there are no handwritten files" do
+      incoming_content = <<~CONTENT
+        {
+            "library_type": "unknown",
+            "ruby-rulez": "yeah!"
+        }
+      CONTENT
+      resulting_content = <<~CONTENT
+        {
+            "library_type": "GAPIC_AUTO",
+            "ruby-rulez": "yeah!"
+        }
+      CONTENT
+
+      create_staging_file "hello/.repo-metadata.json", incoming_content
+
+      invoke_owlbot
+
+      assert_gem_file "hello/.repo-metadata.json", resulting_content
+    end
+
+    it "sets the library_type to combo if there are handwritten files" do
+      incoming_content = <<~CONTENT
+        {
+            "library_type": "unknown",
+            "ruby-rulez": "yeah!"
+        }
+      CONTENT
+      resulting_content = <<~CONTENT
+        {
+            "library_type": "GAPIC_COMBO",
+            "ruby-rulez": "yeah!"
+        }
+      CONTENT
+
+      create_staging_file "hello/.repo-metadata.json", incoming_content
+      create_existing_manifest static: ["lib/foo/bar.rb"]
+
+      invoke_owlbot
+
+      assert_gem_file "hello/.repo-metadata.json", resulting_content
+    end
+  end
+
   it "preserves gem version field while allowing changes to api version field" do
     orig_content = <<~CONTENT
       {

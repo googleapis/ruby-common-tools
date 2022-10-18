@@ -64,6 +64,40 @@ module OwlBot
     end
 
     ##
+    # A convenience method that installs a modifier setting the `library_type`
+    # field in existing `.repo-metadata.json` files. It uses the following
+    # heuristic to determine the type of library:
+    #
+    #  *  If the gem name doesn't end with a service version, the library is
+    #     assumed to be a wrapper, and the type is set to `GAPIC_MANUAL`, which
+    #     is what we use for wrappers and veneers.
+    #  *  Otherwise, if there are any _static_ (non-generated) ruby files under
+    #     `lib/`, the type is set to `GAPIC_COMBO`
+    #  *  Otherwise, the type is set to `GAPIC_AUTO`.
+    #
+    # @param name [String] Optional name for the modifier to add. Defaults to
+    #     `"detect_repo_metadata_library_type"`.
+    #
+    def detect_repo_metadata_library_type name: nil
+      path = [/\.repo-metadata\.json$/]
+      name ||= "detect_repo_metadata_library_type"
+      modifier path: path, name: name do |src, _dest|
+        if src
+          type =
+            if gem_name !~ /-v\d+\w*$/
+              "GAPIC_MANUAL"
+            elsif previous_static_files.any? { |path| path =~ %r{lib/.*\.rb$} }
+              "GAPIC_COMBO"
+            else
+              "GAPIC_AUTO"
+            end
+          src = src.sub(/"library_type": "(\w+)"/, "\"library_type\": \"#{type}\"")
+        end
+        src
+      end
+    end
+
+    ##
     # A convenience method that installs a modifier preserving gem release
     # `version` fields in existing snippet metadata files.
     #
@@ -108,6 +142,9 @@ module OwlBot
     # * A modifier named `"preserve_repo_metadata_release_levels"` which
     #   ensures the `"release_level"` field of `.repo-metadata.json` files is
     #   not modified.
+    # * A modifier named `"detect_repo_metadata_library_type"` which sets the
+    #   `"library_type"` field in `.repo-metadata.json` files based on an
+    #   heuristic analysis of the library name and contents.
     # * A modifier named `"preserve_snippet_metadata_release_versions"` which
     #   ensures the `"version"` field of snippet metadata files is not modified.
     # * A modifier named `"prevent_overwrite_of_existing_changelog_file"` which
@@ -125,6 +162,7 @@ module OwlBot
     def install_default_modifiers
       preserve_existing_copyright_years
       preserve_repo_metadata_release_levels
+      detect_repo_metadata_library_type
       preserve_snippet_metadata_release_versions
       prevent_overwrite_of_existing "CHANGELOG.md",
                                     name: "prevent_overwrite_of_existing_changelog_file"
