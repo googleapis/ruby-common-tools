@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.0 (2022-10-18)
+
+#### Features
+
+* Analyze the library and set library_type in repo-metadata ([#133](https://github.com/googleapis/ruby-common-tools/issues/133)) 
+
 ### 0.8.0 (2022-08-03)
 
 #### Features
