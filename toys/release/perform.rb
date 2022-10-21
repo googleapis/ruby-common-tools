@@ -22,6 +22,10 @@ flag :base_dir, "--base-dir=PATH"
 flag :all, "--all=REGEX"
 flag :enable_docs
 flag :enable_rad
+flag :gems, "--gems=NAMES" do |f|
+  f.accept Array
+  f.desc "Run for the given gems (comma-delimited)"
+end
 flag :force_republish
 flag :rubygems_api_token, "--rubygems-api-token=VALUE"
 flag :docs_staging_bucket, "--docs-staging-bucket=VALUE"
@@ -43,22 +47,33 @@ def run
 end
 
 def perform_release
-  determine_packages.each do |name, version|
-    releaser = Performer.new name,
-                             last_version: version,
-                             logger: logger,
-                             tool_name: tool_name,
-                             cli: cli,
-                             rubygems_api_token: rubygems_api_token || ENV["RUBYGEMS_API_TOKEN"],
-                             docs_staging_bucket: docs_staging_bucket || ENV["STAGING_BUCKET"] || "docs-staging",
-                             rad_staging_bucket: rad_staging_bucket || ENV["V2_STAGING_BUCKET"] || "docs-staging-v2",
-                             docuploader_credentials: docuploader_credentials || ENV["DOCUPLOADER_CREDENTIALS"]
-
-    releaser.run force_republish: force_republish,
-                 enable_docs: enable_docs,
-                 enable_rad: enable_rad,
-                 dry_run: dry_run
+  if gems
+    gems.each do |gem|
+      gem_name, gem_version = (lookup_current_versions Regexp.new "^#{gem}$").first
+      perform_release_gem name: gem_name, version: gem_version
+    end
+  else
+    determine_packages.each do |name, version|
+      perform_release_gem name: name, version: version
+    end
   end
+end
+
+def perform_release_gem name:, version:
+  releaser = Performer.new name,
+                           last_version: version,
+                           logger: logger,
+                           tool_name: tool_name,
+                           cli: cli,
+                           rubygems_api_token: rubygems_api_token || ENV["RUBYGEMS_API_TOKEN"],
+                           docs_staging_bucket: docs_staging_bucket || ENV["STAGING_BUCKET"] || "docs-staging",
+                           rad_staging_bucket: rad_staging_bucket || ENV["V2_STAGING_BUCKET"] || "docs-staging-v2",
+                           docuploader_credentials: docuploader_credentials || ENV["DOCUPLOADER_CREDENTIALS"]
+
+  releaser.run force_republish: force_republish,
+               enable_docs: enable_docs,
+               enable_rad: enable_rad,
+               dry_run: dry_run
 end
 
 def load_env
