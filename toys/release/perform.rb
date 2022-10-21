@@ -24,7 +24,7 @@ flag :enable_docs
 flag :enable_rad
 flag :gems, "--gems=NAMES" do |f|
   f.accept Array
-  f.desc "Test the given gems (comma-delimited) instead of analyzing changes."
+  f.desc "Run for the given gems (comma-delimited)"
 end
 flag :force_republish
 flag :rubygems_api_token, "--rubygems-api-token=VALUE"
@@ -95,7 +95,6 @@ end
 def determine_packages
   packages = {}
   if all
-    puts all
     regex = Regexp.new all
     current_versions = lookup_current_versions regex
     Dir.glob "*/*.gemspec" do |path|
