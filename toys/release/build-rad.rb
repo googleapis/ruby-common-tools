@@ -17,18 +17,23 @@
 desc "Build cloud-rad yardoc"
 
 flag :bundle
-flag :yardopts, "--yardopts=PATH", default: ".yardopts"
+flag :yardopts, "--yardopts=PATH"
 flag :gem_name, "--gem-name=NAME"
 flag :friendly_api_name, "--friendly-api-name=NAME"
 
 include :exec, e: true
 include :gems, on_missing: :install
+include :fileutils
 
 def run
   unless gem_name
     logger.error "--gem-name argument is required"
     exit 1
   end
+  set :yardopts, (File.file?(".yardopts-cloudrad") ? ".yardopts-cloudrad" : ".yardopts") unless yardopts
+  logger.info "Reading yardopts from #{yardopts}"
+  rm_rf ".yardoc"
+  rm_rf "doc"
   unless bundle
     gem "yard", "~> 0.9", ">= 0.9.26"
     gem "redcarpet", "~> 3.5", ">= 3.5.1"
