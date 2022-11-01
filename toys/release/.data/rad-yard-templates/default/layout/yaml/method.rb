@@ -231,7 +231,7 @@ def tag_content tag
   entry = "- description: \""
   entry += "#{bold tag.name} " if tag.name && !tag.name.empty?
   entry += "(#{types.join ", "})" unless types.empty?
-  entry += " — #{pre_format tag.text}" unless tag.text.empty?
+  entry += " — #{pre_format tag.text}" if tag.text && !tag.text.empty?
   entry += "\""
   entry
 end
