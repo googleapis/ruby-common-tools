@@ -293,6 +293,21 @@ describe OwlBot do
     assert_gem_file "hello/.repo-metadata.json", resulting_content
   end
 
+  it "fixes ruby-doc.org links" do
+    incoming_content = <<~CONTENT
+      Link [here](https://ruby-doc.org/stdlib/libdoc/logger/rdoc/Logger.html) for a good time!
+    CONTENT
+    resulting_content = <<~CONTENT
+      Link [here](https://ruby-doc.org/current/stdlibs/logger/Logger.html) for a good time!
+    CONTENT
+
+    create_staging_file "hello/README.md", incoming_content
+
+    invoke_owlbot
+
+    assert_gem_file "hello/README.md", resulting_content
+  end
+
   describe "versioned gem name" do
     let(:gem_name) { "my-gem-v1" }
 
