@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.1 (2022-12-05)
+
+#### Bug Fixes
+
+* Fixed ruby-doc.org links using the old pre-2022 format ([#140](https://github.com/googleapis/ruby-common-tools/issues/140)) 
+
 ### 0.9.0 (2022-10-18)
 
 #### Features
