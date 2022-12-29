@@ -36,8 +36,8 @@ module Yoshi
                 &block
       unless enabled
         @context.logger.info "Pull request generation disabled"
-        block.call
-        return :disabled
+        aborted = call_abortable_block block
+        return aborted ? :aborted : :disabled
       end
       raise "Attempted to re-enter PrGenerator#capture" if @capturing
 
@@ -45,10 +45,12 @@ module Yoshi
       saved_branch_name = start_capture branch_name
 
       @capturing = true
-      block.call
+      aborted = call_abortable_block block
       @capturing = false
-  
-      if @yoshi_utils.git_clean?
+
+      if aborted
+        pr_number = :aborted
+      elsif @yoshi_utils.git_clean?
         pr_number = :unchanged
       else
         pr_number = create_pr branch_name, remote, commit_message, pr_body, extra_propagation_wait
@@ -57,7 +59,18 @@ module Yoshi
       finish_capture pr_number, branch_name, saved_branch_name
     end
 
+    def abort_capture!
+      throw :yoshi_pr_generator_abort, true
+    end
+
     private
+
+    def call_abortable_block block
+      catch :yoshi_pr_generator_abort do
+        block.call
+        false
+      end
+    end
 
     def start_capture branch_name
       @context.logger.info "Capturing changes for pull request"
@@ -111,14 +124,17 @@ module Yoshi
     def finish_capture pr_number, branch_name, saved_branch_name
       @context.exec ["git", "switch", saved_branch_name], e: true
       @context.exec ["git", "branch", "-D", branch_name], e: true
-      if pr_number == :unchanged
+      @context.exec ["git", "clean", "-df"], e: true unless pr_number == :unchanged
+      case pr_number
+      when :aborted
+        @context.logger.info "Pull request aborted."
+      when :unchanged
         @context.logger.info "No files changed; no pull request created"
-        pr_number
       else
-        @context.exec ["git", "clean", "-df"], e: true
+        pr_number = pr_number.to_i
         @context.logger.info "Finished capture and opened pull request #{pr_number}"
-        pr_number.to_i
       end
+      pr_number
     end
 
     def generate_default_branch_name
