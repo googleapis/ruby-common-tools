@@ -33,3 +33,12 @@ mixin "yoshi-pr-generator" do
     end
   end
 end
+
+mixin "yoshi-sample-loader" do
+  def yoshi_sample_loader
+    @yoshi_sample_loader ||= begin
+      require_relative ".lib/yoshi/sample_loader"
+      SampleLoader
+    end
+  end
+end
