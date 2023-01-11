@@ -151,6 +151,21 @@ module OwlBot
     end
 
     ##
+    # Temporary fix for googleapis.dev URLs that have been moved elsewhere.
+    #
+    # @param name [String] Optional name for the modifier to add. Defaults to
+    #     `"fix_googleapis_dev_links"`.
+    #
+    def fix_googleapis_dev_links path: nil, name: nil
+      path ||= [/\.md$/]
+      name ||= "fix_googleapis_dev_links"
+      modifier path: path, name: name do |src, _dest|
+        src&.gsub %r{\(https://googleapis\.dev/ruby/([a-z_-]+)/latest\)},
+                  "https://cloud.google.com/ruby/docs/reference/\\1/latest"
+      end
+    end
+
+    ##
     # Install the default modifiers. This includes:
     #
     # * A modifier named `"preserve_existing_copyright_years"` which ensures
@@ -186,7 +201,12 @@ module OwlBot
                                     name: "prevent_overwrite_of_existing_gem_version_file"
       # TODO: Remove this when we're sure the generator isn't generating any
       # old links.
+      # See https://github.com/googleapis/gapic-generator-ruby/issues/898
       fix_rubydoc_org_links
+      # TODO: Remove this when we're sure the generator isn't generating any
+      # old links.
+      # See https://github.com/googleapis/gapic-generator-ruby/issues/899
+      fix_googleapis_dev_links
     end
   end
 end
