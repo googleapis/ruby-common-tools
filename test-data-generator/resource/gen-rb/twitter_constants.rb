@@ -17,6 +17,5 @@
 # DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
 #
 
-require 'thrift'
-require_relative 'twitter_types'
-
+require "thrift"
+require_relative "twitter_types"

@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative "generator" 
+require_relative "generator"
 
 def create_data_into_file filename, data_type, data_pattern, data_size
-    data_size = data_size.to_i
-    generator = Generator.new data_type, data_pattern, data_size
-    File.open(filename, "w") do |f|     
-        f.write(generator.generate)   
-    end
+  data_size = data_size.to_i
+  generator = Generator.new data_type, data_pattern, data_size
+  File.write filename, generator.generate
 end
 
 create_data_into_file ARGV.shift, ARGV.shift, ARGV.shift, ARGV.shift
