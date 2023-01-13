@@ -86,7 +86,7 @@ module SampleLoader
         segs
       end
     end
-  
+
     ##
     # The method name of a sample. This is equal to the last name segment.
     #
@@ -121,7 +121,7 @@ module SampleLoader
           klass = traverse_name klass, name, type
         end
         bind = klass.class_eval { binding }
-        eval sample_text, bind, file_path rescue nil
+        eval sample_text, bind, file_path rescue nil # rubocop:disable Security/Eval
         klass
       end
     end
@@ -229,37 +229,39 @@ module SampleLoader
       obj
     end
 
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+
     def parse_yardoc
-      unless defined? @parameters
-        @parameters = @description = ""
-        if sample_text =~ /(?:^|\n)((?:\s*#[^\n]*\n)+)\s*def #{method_name}/
-          cur_param = nil
-          desc = []
-          params = []
-          Regexp.last_match[1].split("\n").each do |line|
-            line = line.strip.gsub(/^#+\s?/, "")
-            if line.start_with? "@"
-              params << cur_param if cur_param
-              cur_param = false
-              if line =~ /^@param\s+(\w+)\s+\[(.+)\](?:\s+(.+))?/
-                match = Regexp.last_match
-                name = match[1].to_sym
-                cur_param = [name, match[2], [match[3] || ""]] if param_names.include? name
-              end
-            elsif !line.empty?
-              if cur_param
-                cur_param[2] << line
-              elsif cur_param.nil?
-                desc << line
-              end
-            end
-          end
+      return if defined? @parameters
+      @parameters = @description = ""
+      return unless sample_text =~ /(?:^|\n)((?:\s*#[^\n]*\n)+)\s*def #{method_name}/
+      cur_param = nil
+      desc = []
+      params = []
+      Regexp.last_match[1].split("\n").each do |line|
+        line = line.strip.gsub(/^#+\s?/, "")
+        if line.start_with? "@"
           params << cur_param if cur_param
-          @description = desc.join " "
-          @parameters = params.map { |param| [param[0], param[1], param[2].join(" ")] }
+          cur_param = false
+          if line =~ /^@param\s+(\w+)\s+\[(.+)\](?:\s+(.+))?/
+            match = Regexp.last_match
+            name = match[1].to_sym
+            cur_param = [name, match[2], [match[3] || ""]] if param_names.include? name
+          end
+        elsif !line.empty?
+          if cur_param
+            cur_param[2] << line
+          elsif cur_param.nil?
+            desc << line
+          end
         end
       end
+      params << cur_param if cur_param
+      @description = desc.join " "
+      @parameters = params.map { |param| [param[0], param[1], param[2].join(" ")] }
     end
+
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
   end
 
   class << self
