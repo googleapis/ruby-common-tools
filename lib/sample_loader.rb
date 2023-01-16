@@ -307,12 +307,8 @@ module SampleLoader
       unless defined? @samples_dir
         @samples_dir = nil
         base_dir = "#{File.dirname File.dirname __dir__}/"
-        cur_dir = Dir.getwd
-        if cur_dir.start_with? base_dir
-          gem_name = cur_dir[base_dir.length..].split("/").first
-          tentative_dir = File.join base_dir, gem_name, "samples"
-          @samples_dir = tentative_dir if ::File.directory? tentative_dir
-        end
+        tentative_dir = File.join base_dir, "samples"
+        @samples_dir = tentative_dir if ::File.directory? tentative_dir
       end
       @samples_dir
     end
