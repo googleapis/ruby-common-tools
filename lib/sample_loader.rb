@@ -306,11 +306,26 @@ module SampleLoader
     def samples_dir
       unless defined? @samples_dir
         @samples_dir = nil
-        base_dir = "#{File.dirname File.dirname __dir__}/"
+        pathname = Pathname.new Dir.getwd
+        gemspec_path = find_gemspec_path pathname
+        base_dir = File.dirname gemspec_path
         tentative_dir = File.join base_dir, "samples"
         @samples_dir = tentative_dir if ::File.directory? tentative_dir
       end
       @samples_dir
     end
+
+    ##
+    # Find the .gemspec file for the current library.
+    #
+    # @return [String] if the .gemspec file could be found.
+    # @return [nil] if the .gemspec file could not be found.
+    #
+    def find_gemspec_path pathname
+      pathname.ascend.each do |pn|
+        path = pn.glob("*.gemspec").first
+        break path unless path.nil?
+      end
+    end    
   end
 end
