@@ -326,6 +326,6 @@ module SampleLoader
         path = pn.glob("*.gemspec").first
         break path unless path.nil?
       end
-    end    
+    end
   end
 end
