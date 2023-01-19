@@ -34,6 +34,9 @@
 # SampleLoader loads each sample method in a unique class to avoid conflicts
 # between samples as well as conflicts with other methods in the system.
 #
+
+require "pthname"
+
 module SampleLoader
   @samples = {}
 
@@ -310,7 +313,7 @@ module SampleLoader
         gemspec_path = find_gemspec_path pathname
         base_dir = File.dirname gemspec_path
         tentative_dir = File.join base_dir, "samples"
-        @samples_dir = tentative_dir if ::File.directory? tentative_dir
+        @samples_dir = tentative_dir if File.directory? tentative_dir
       end
       @samples_dir
     end
