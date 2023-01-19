@@ -35,7 +35,7 @@
 # between samples as well as conflicts with other methods in the system.
 #
 
-require "pthname"
+require "pathname"
 
 module SampleLoader
   @samples = {}
