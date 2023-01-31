@@ -1,0 +1,12 @@
+require "rake/extensiontask"
+require "yaml"
+
+permitted_classes = [Gem::Specification, Gem::Dependency, Gem::Version, Gem::Requirement, Time, Symbol]
+spec = YAML.load_file "<%= gem_name %>-<%= gem_version %>.gemspec", permitted_classes: permitted_classes
+
+<% extensions.each do |extension| %>
+Rake::ExtensionTask.new "<%= extension %>", spec do |ext|
+  ext.cross_compile = true
+  ext.cross_platform = <%= platforms.inspect %>
+end
+<% end %>
