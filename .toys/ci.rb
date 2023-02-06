@@ -36,11 +36,14 @@ def handle_result result
 end
 
 def run
-  ::Dir.chdir context_directory
+  Dir.chdir context_directory
   CHECKS.each { |name| set name, !only if get(name).nil? }
   if test
     Dir.chdir "owlbot-postprocessor" do
-      exec ["toys", "test"], name: "OwlBot postprocessor tests"
+      exec_separate_tool ["test"], name: "OwlBot postprocessor tests"
+    end
+    Dir.chdir "gas" do
+      exec_separate_tool ["system", "test"], name: "GAS tests"
     end
   end
   exec_tool ["rubocop"], name: "Rubocop" if rubocop
@@ -50,9 +53,9 @@ tool "build" do
   include :exec, e: true
 
   def run
-    ::Dir.chdir context_directory
-    ::Dir.chdir "owlbot-postprocessor" do
-      exec ["toys", "build"] + verbosity_flags
+    Dir.chdir context_directory
+    Dir.chdir "owlbot-postprocessor" do
+      exec_separate_tool ["build"] + verbosity_flags
     end
   end
 end
