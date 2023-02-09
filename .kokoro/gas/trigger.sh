@@ -8,4 +8,5 @@ export GEM_HOME=$HOME/.gem
 export PATH=$GEM_HOME/bin:$PATH
 
 gem install --no-document toys:0.14.4
+cd gas
 toys gas kokoro-trigger -v
