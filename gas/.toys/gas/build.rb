@@ -174,7 +174,7 @@ def build_platform platform
     ENV["RCD_IMAGE"] = Gas::RAKE_COMPILER_DOCK_IMAGE[platform]
     script = "bundle install --local && bundle exec rake native:#{platform} gem RUBY_CC_VERSION=#{ruby_cc_version}"
     RakeCompilerDock.sh script, platform: platform
-    artifact_name = "#{workspace_dir}/#{gem_name}-#{gem_version}/pkg/#{gem_name}-#{gem_version}-#{platform}.gem"
+    artifact_name = "pkg/#{gem_name}-#{gem_version}-#{platform}.gem"
     raise "Expected artifact #{artifact_name} not produced" unless File.file? artifact_name
     logger.info "Built: #{artifact_name}"
     true
