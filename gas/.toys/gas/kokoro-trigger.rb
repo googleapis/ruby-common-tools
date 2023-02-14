@@ -26,10 +26,12 @@ long_desc \
   "KOKORO_GFILE_DIR - Base directory for gfile inclusion. Should be set by " \
     "the Kokoro environment. (Required.)",
   "GAS_SOURCE_GEM - The gfile path (i.e. relative to KOKORO_GFILE_DIR) for " \
-    "the source gem input. Required.",
+    "the source gem input. If a directory is provided, it must contain, " \
+    "recursively, exactly one source gem. Required.",
   "GAS_ADDITIONAL_GEMS - The gfile paths for any additional gems that do " \
     "not need further building but should be released. Multiple gem paths " \
-    "should be delimited by colons. Optional.",
+    "should be delimited by colons. Directories can be included, and will " \
+    "be searched recursively. Optional.",
   "GAS_PLATFORMS - Colon-delimited list of gem platforms that should be " \
     "built into binary gems. Optional.",
   "GAS_RUBY_VERSIONS - Colon-delimited list of Ruby versions that should " \
@@ -54,6 +56,11 @@ end
 def read_input
   gfile_dir = ENV["KOKORO_GFILE_DIR"]
   @source_gem = File.join gfile_dir, ENV["GAS_SOURCE_GEM"]
+  if File.directory? @source_gem
+    candidates = Dir.glob "#{@source_gem}/**/*.gem"
+    raise "Found #{candidates.size} source gem candidates in directory #{@source_gem}" if candidates.size != 1
+    @source_gem = candidates.first
+  end
   @additional_gems = ENV["GAS_ADDITIONAL_GEMS"].to_s.split(":").map { |path| File.join gfile_dir, path }
   @platforms = ENV["GAS_PLATFORMS"].tr ":", ","
   @ruby_versions = ENV["GAS_RUBY_VERSIONS"].tr ":", ","
