@@ -22,6 +22,7 @@ module Gas
   # Platforms to build if no platforms are specified on the command line
   #
   DEFAULT_PLATFORMS = [
+    "aarch64-linux",
     "arm64-darwin",
     "x64-mingw-ucrt",
     "x64-mingw32",

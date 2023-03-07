@@ -27,7 +27,7 @@ describe "gas build" do
   let(:gem_and_version) { "google-protobuf-3.21.12" }
   let(:source_gem) { File.join __dir__, "data", "#{gem_and_version}.gem" }
   let(:workspace_dir) { Dir.mktmpdir }
-  let(:linux_platforms) { ["x86_64-linux", "x86-linux"] }
+  let(:linux_platforms) { ["x86_64-linux", "x86-linux", "aarch64-linux"] }
   let(:darwin_platforms) { ["x86_64-darwin", "arm64-darwin"] }
   let(:windows_platforms) { ["x86-mingw32", "x64-mingw32", "x64-mingw-ucrt"] }
   let(:all_platforms) { linux_platforms + darwin_platforms + windows_platforms }
