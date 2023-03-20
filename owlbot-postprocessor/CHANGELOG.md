@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.2 (2023-03-20)
+
+#### Bug Fixes
+
+* Remove ruby-doc.org link hack ([#193](https://github.com/googleapis/ruby-common-tools/issues/193)) 
+
 ### 0.9.1 (2022-12-05)
 
 #### Bug Fixes
