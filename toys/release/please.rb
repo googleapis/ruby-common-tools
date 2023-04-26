@@ -176,7 +176,7 @@ def package_version package_name, dir, version_path
       proc do
         Dir.chdir dir do
           spec = Gem::Specification.load "#{package_name}.gemspec"
-          puts spec.version.to_s
+          puts spec.version
         end
       end
     end
