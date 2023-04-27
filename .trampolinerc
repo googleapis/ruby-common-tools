@@ -18,7 +18,14 @@ required_envvars+=(
 
 # Add env vars which are passed down into the container here.
 pass_down_envvars+=(
-    "GAS_ADDITIONAL_GEMS" "GAS_DRY_RUN" "GAS_PLATFORMS" "GAS_RUBYGEMS_KEY_FILE" "GAS_RUBY_VERSIONS" "GAS_SOURCE_GEM"
+    "GAS_ADDITIONAL_GEMS"
+    "GAS_ARTIFACTS_DIR"
+    "GAS_DRY_RUN"
+    "GAS_PLATFORMS"
+    "GAS_RUBYGEMS_KEY_FILE"
+    "GAS_RUBY_VERSIONS"
+    "GAS_SOURCE_GEM"
+    "GAS_WORKSPACE_DIR"
 )
 
 # Prevent unintentional override on the default image.
