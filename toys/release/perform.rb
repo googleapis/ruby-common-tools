@@ -260,7 +260,11 @@ class Performer
         return
       end
       logger.info "**** Starting publish_rad for #{gem_name}"
-      cli.run(*tool_name[0..-2], "build-rad", "--gem-name", gem_name, "--friendly-api-name", friendly_api_name)
+      result = cli.run(*tool_name[0..-2], "build-rad", "--gem-name", gem_name, "--friendly-api-name", friendly_api_name)
+      unless result.zero?
+        logger.error "**** build-rad failed! Aborting publish_rad."
+        return
+      end
       run_docuploader staging_bucket: rad_staging_bucket,
                       extra_docuploader_args: ["--destination-prefix", "docfx"],
                       dry_run: dry_run
