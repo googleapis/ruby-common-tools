@@ -49,6 +49,7 @@ def run
   analyze_source
   build_binaries
   upload_gems
+  prepare_artifacts
 end
 
 # Read input and configuration from the environment.
@@ -67,6 +68,7 @@ def read_input
   @rubygems_key_file = File.join gfile_dir, ENV["GAS_RUBYGEMS_KEY_FILE"]
   @dry_run = !ENV["GAS_DRY_RUN"].to_s.empty?
   @workspace_dir = ENV["GAS_WORKSPACE_DIR"] || "workspace"
+  @artifacts_dir = ENV["GAS_ARTIFACTS_DIR"] || "artifacts"
 end
 
 # Read the gem name and version from the source gem metadata
@@ -120,5 +122,27 @@ def upload_gems
   unless result.zero?
     logger.fatal "gas publish failed with result #{result}"
     exit result
+  end
+end
+
+def prepare_artifacts
+  return if @artifacts_dir.empty? || @dry_run
+  rm_rf @artifacts_dir
+  mkdir_p @artifacts_dir
+  cd "#{@workspace_dir}/#{@gem_name}-#{@gem_version}/pkg" do
+    Dir.glob "*.gem" do |name|
+      cp name, "#{@artifacts_dir}/#{name}"
+    end
+  end
+  cp @source_gem, "#{@artifacts_dir}/#{File.basename @source_gem}"
+  @additional_gems.each do |additional_entry|
+    if File.file? additional_entry
+      cp additional_entry, "#{@artifacts_dir}/#{File.basename additional_entry}"
+    elsif File.directory? additional_entry
+      additional_gems = Dir.glob "#{additional_entry}/**/*.gem"
+      additional_gems.each do |additional_gem|
+        cp additional_gem, "#{@artifacts_dir}/#{File.basename additional_gem}"
+      end
+    end
   end
 end
