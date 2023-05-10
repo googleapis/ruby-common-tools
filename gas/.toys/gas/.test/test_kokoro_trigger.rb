@@ -30,8 +30,8 @@ describe "gas kokoro-trigger" do
   toys_include_builtins false
 
   let(:exec_service) { Toys::Utils::Exec.new }
-  let(:workspace_dir) { Dir.mktmpdir }
-  let(:artifacts_dir) { File.join workspace_dir, "artifacts" }
+  let(:workspace_dir) { "workspace" }
+  let(:artifacts_dir) { "artifacts" }
   let(:gem_platforms) do
     [
       "arm64-darwin",
@@ -100,7 +100,6 @@ describe "gas kokoro-trigger" do
 
   after do
     Gems.reset
-    FileUtils.rm_rf workspace_dir
   end
 
   it "runs on a protobuf release" do

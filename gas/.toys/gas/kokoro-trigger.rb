@@ -129,10 +129,9 @@ def prepare_artifacts
   return if @artifacts_dir.empty? || @dry_run
   rm_rf @artifacts_dir
   mkdir_p @artifacts_dir
-  cd "#{@workspace_dir}/#{@gem_name}-#{@gem_version}/pkg" do
-    Dir.glob "*.gem" do |name|
-      cp name, "#{@artifacts_dir}/#{name}"
-    end
+  pkg_dir = "#{@workspace_dir}/#{@gem_name}-#{@gem_version}/pkg"
+  Dir.glob "*.gem", base: pkg_dir do |name|
+    cp "#{pkg_dir}/#{name}", "#{@artifacts_dir}/#{name}"
   end
   cp @source_gem, "#{@artifacts_dir}/#{File.basename @source_gem}"
   @additional_gems.each do |additional_entry|

@@ -1,6 +1,12 @@
 inherit_gem:
   google-style: google-style.yml
 
+AllCops:
+  Exclude:
+    - "test-data-generator/resource/**/*"
+    - "gas/workspace/**/*"
+    - "gas/artifacts/**/*"
+
 Metrics/BlockLength:
   Exclude:
     - "owlbot-postprocessor/test/test_*.rb"
@@ -20,7 +26,3 @@ Style/Documentation:
 Style/MixinGrouping:
   Exclude:
     - "owlbot-postprocessor/.toys.rb"
-
-AllCops:
-  Exclude:
-    - 'test-data-generator/resource/**/*'
