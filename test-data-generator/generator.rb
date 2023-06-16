@@ -63,7 +63,7 @@ class Generator
   end
 
   def syntetic_semi_repeated
-    message = 10.times.map { SecureRandom.random_bytes(15) }.join(" ")
+    message = 10.times.map { SecureRandom.random_bytes 15 }.join(" ")
     count = size / message.length
     message * count
   end
