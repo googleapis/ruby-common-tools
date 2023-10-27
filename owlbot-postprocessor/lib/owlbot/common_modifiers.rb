@@ -135,22 +135,6 @@ module OwlBot
     end
 
     ##
-    # Temporary fix for ruby-doc.org links that broke with the December 2022
-    # redesign of of the site.
-    #
-    # @param name [String] Optional name for the modifier to add. Defaults to
-    #     `"fix_rubydoc_org_links"`.
-    #
-    def fix_rubydoc_org_links path: nil, name: nil
-      path ||= [/\.md$/]
-      name ||= "fix_rubydoc_org_links"
-      modifier path: path, name: name do |src, _dest|
-        src&.gsub %r{https://ruby-doc\.org/stdlib/libdoc/(\w+)/rdoc/([\w/]+)\.html},
-                  "https://ruby-doc.org/current/stdlibs/\\1/\\2.html"
-      end
-    end
-
-    ##
     # Install the default modifiers. This includes:
     #
     # * A modifier named `"preserve_existing_copyright_years"` which ensures
@@ -184,9 +168,6 @@ module OwlBot
                                     name: "prevent_overwrite_of_existing_changelog_file"
       prevent_overwrite_of_existing "lib/#{@impl.gem_name.tr '-', '/'}/version.rb",
                                     name: "prevent_overwrite_of_existing_gem_version_file"
-      # TODO: Remove this when we're sure the generator isn't generating any
-      # old links.
-      fix_rubydoc_org_links
     end
   end
 end

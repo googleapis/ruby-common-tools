@@ -150,7 +150,7 @@ def arg_text method, params, indent
     name = arg.name
     name = "value" if name.nil? || name.empty?
     entry = "- description: \"#{bold name}"
-    types = arg.types.map { |type| link_objects type }
+    types = arg.types.to_a.map { |type| link_objects type }
     entry += " (#{types.join ", "})" unless types.empty?
     default_value ||= canonical_method.parameters.select { |n| n[0] == "#{name}:" }.last
     if default_value && default_value.last

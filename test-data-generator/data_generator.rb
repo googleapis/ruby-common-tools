@@ -1,6 +1,4 @@
-# frozen_string_literal: true
-
-# Copyright 2021 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module OwlBot
-  VERSION = "0.9.2"
+require_relative "generator"
+
+def create_data_into_file filename, data_type, data_pattern, data_size
+  data_size = data_size.to_i
+  generator = Generator.new data_type, data_pattern, data_size
+  File.write filename, generator.generate
 end
+
+create_data_into_file ARGV.shift, ARGV.shift, ARGV.shift, ARGV.shift

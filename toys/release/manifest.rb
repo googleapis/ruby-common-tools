@@ -93,8 +93,8 @@ def run_release_please package: nil, version: nil # rubocop:disable Metrics/Cycl
   cmd += ["release-please", "release-pr", "--repo-url", repo_url]
   cmd += ["--fork"] if use_fork
   cmd += ["--token", github_token] if github_token
-  cmd += ["--path", package] if package
-  cmd += ["--release-as", version] if version
+  cmd += ["--path", package] if package && !package.empty?
+  cmd += ["--release-as", version] if version && !version.empty?
   cmd += ["--skip-labeling"] if skip_labeling
   cmd += ["--dry-run"] if dry_run
   cmd += ["--debug"] if verbosity.positive?

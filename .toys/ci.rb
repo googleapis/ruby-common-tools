@@ -36,17 +36,20 @@ def handle_result result
 end
 
 def run
-
+  
   # Temporary hack to allow minitest-rg 5.2.0 to work in minitest 5.19 or
   # later. This should be removed if we have a better solution or decide to
   # drop rg.
   ENV["MT_COMPAT"] = "true"
   
-  ::Dir.chdir context_directory
+  Dir.chdir context_directory
   CHECKS.each { |name| set name, !only if get(name).nil? }
   if test
     Dir.chdir "owlbot-postprocessor" do
-      exec ["toys", "test"], name: "OwlBot postprocessor tests"
+      exec_separate_tool ["test"], name: "OwlBot postprocessor tests"
+    end
+    Dir.chdir "gas" do
+      exec_separate_tool ["system", "test"], name: "GAS tests"
     end
   end
   exec_tool ["rubocop"], name: "Rubocop" if rubocop
@@ -56,9 +59,9 @@ tool "build" do
   include :exec, e: true
 
   def run
-    ::Dir.chdir context_directory
-    ::Dir.chdir "owlbot-postprocessor" do
-      exec ["toys", "build"] + verbosity_flags
+    Dir.chdir context_directory
+    Dir.chdir "owlbot-postprocessor" do
+      exec_separate_tool ["build"] + verbosity_flags
     end
   end
 end

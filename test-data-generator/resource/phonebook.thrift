@@ -1,6 +1,4 @@
-# frozen_string_literal: true
-
-# Copyright 2021 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module OwlBot
-  VERSION = "0.9.2"
-end
+enum PhoneType {
+  MOBILE = 0,
+  HOME = 1,
+  WORK = 2
+}
+
+struct Name {
+  1: string firstName,
+  2: string lastName
+}
+
+struct Phone {
+  1: PhoneType type = PhoneType.MOBILE,
+  2: i32       number
+}
+
+struct Person {
+  1: Name        name,
+  2: list<Phone> phones,
+}
+
+struct PhoneBook {
+  1: list<Person> people,
+}
