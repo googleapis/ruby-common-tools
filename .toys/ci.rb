@@ -36,6 +36,12 @@ def handle_result result
 end
 
 def run
+
+  # Temporary hack to allow minitest-rg 5.2.0 to work in minitest 5.19 or
+  # later. This should be removed if we have a better solution or decide to
+  # drop rg.
+  ENV["MT_COMPAT"] = "true"
+  
   ::Dir.chdir context_directory
   CHECKS.each { |name| set name, !only if get(name).nil? }
   if test
