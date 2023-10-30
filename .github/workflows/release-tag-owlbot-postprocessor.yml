@@ -14,7 +14,7 @@ jobs:
       RELEASE_PLEASE_DISABLE: ${{ secrets.RELEASE_PLEASE_DISABLE }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install NodeJS 14.x
         uses: actions/setup-node@v3
         with:
