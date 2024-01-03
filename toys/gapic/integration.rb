@@ -115,7 +115,7 @@ def run_acceptance smoke_only:
     puts "No acceptance tests present"
     exit 0
   end
-  result = cli.run "acceptance", smoke_only ? "_smoke" : "_acceptance"
+  result = cli.run "integration", smoke_only ? "_smoke" : "_acceptance"
   exit result unless result.zero?
 end
 
