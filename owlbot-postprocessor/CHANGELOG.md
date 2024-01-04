@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.3 (2024-01-04)
+
+#### Bug Fixes
+
+* Updates to Ruby and Toys ([#288](https://github.com/googleapis/ruby-common-tools/issues/288)) 
+
 ### 0.9.2 (2023-03-20)
 
 #### Bug Fixes
