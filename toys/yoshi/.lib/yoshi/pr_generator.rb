@@ -87,7 +87,7 @@ module Yoshi
       @context.exec ["git", "add", "."], e: true
       @context.exec ["git", "commit", "-m", commit_message]
       @yoshi_utils.gh_without_standard_git_auth if_auth_in_remote_url: remote do
-        @context.exec ["git", "push", "-u", remote, branch_name]
+        @context.exec ["git", "push", "-f", "-u", remote, branch_name]
       end
 
       repo_name = @yoshi_utils.gh_repo_full_name
