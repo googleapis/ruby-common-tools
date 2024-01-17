@@ -44,11 +44,11 @@ describe "gas kokoro-trigger" do
     ]
   end
   let(:ruby_versions) { ["2.7", "3.0", "3.1", "3.2"] }
-  let(:gem_and_version) { "google-protobuf-3.21.12" }
+  let(:gem_and_version) { "google-protobuf-3.25.2" }
   let(:protobuf_env) do
     {
       "KOKORO_GFILE_DIR" => __dir__,
-      "GAS_SOURCE_GEM" => "data",
+      "GAS_SOURCE_GEM" => "data32",
       "GAS_ADDITIONAL_GEMS" => "data2",
       "GAS_PLATFORMS" => gem_platforms.join(":"),
       "GAS_RUBY_VERSIONS" => ruby_versions.join(":"),
@@ -146,7 +146,7 @@ describe "gas kokoro-trigger" do
     end
 
     # Make sure the artifacts directory includes the source and additional gems
-    original_content = File.read "#{__dir__}/data/#{gem_and_version}.gem"
+    original_content = File.read "#{__dir__}/data32/#{gem_and_version}.gem"
     artifact_content = File.read "#{artifacts_dir}/#{gem_and_version}.gem"
     assert_equal original_content, artifact_content
     fake_gems.each do |fake_gem|

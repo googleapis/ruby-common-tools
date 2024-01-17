@@ -35,7 +35,7 @@ module Gas
   ##
   # Ruby versions to build if no versions are specified on the command line
   #
-  DEFAULT_RUBIES = ["2.6", "2.7", "3.0", "3.1", "3.2"]
+  DEFAULT_RUBIES = ["2.6", "2.7", "3.0", "3.1", "3.2", "3.3"]
 
   ##
   # Version of the Gems gem to install
@@ -50,25 +50,25 @@ module Gas
   ##
   # Version of Rake-compiler to install
   #
-  RAKE_COMPILER_VERSION = "1.2.1"
+  RAKE_COMPILER_VERSION = "1.2.5"
 
   ##
   # Version of Rake-compiler-dock to install
   #
-  RAKE_COMPILER_DOCK_VERSION = "1.3.0"
+  RAKE_COMPILER_DOCK_VERSION = "1.4.0"
 
   ##
-  # RCD images with pinned hashes, for 1.3.0-mri, keyed by platform
+  # RCD images with pinned hashes, for 1.4.0-mri, keyed by platform
   #
   RAKE_COMPILER_DOCK_IMAGE = {
-    "aarch64-linux" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:a8eeb523cd8bef165d4b8dcb9e4588274dd0b9c95f11b66631ae0b4207791e36",
-    "arm-linux" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:e0d38dfca73d1c100a0e8bdb211d898498ae2d9e0f46cba66bdcd7057647ac94",
-    "arm64-darwin" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:e0eb1f9f632fb18d4f244b7297d1a5e7cf60ae58e649ac5b2f8ac6266ea07128",
-    "x64-mingw-ucrt" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:29a89cf3864b78d2a8c4668982210cbf1d102395061d9281158a9f329f99099a",
-    "x64-mingw32" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:6e968a39510aa16fb7b02f9dbb7eed35045ad751eacc32deec9b7d55603bae09",
-    "x86-linux" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:7bc2311ef5ee37ed63a379fa988854770d9392b3120b51c384d6cd3cafd914c8",
-    "x86-mingw32" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:4372920da490410bfb0f892be20a2258643408bf265e48bb6cd388694fa7746d",
-    "x86_64-darwin" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:8dd11cad778d9fc01c3555a57254016f5db7227309d24f50a192a6db80d4a51c",
-    "x86_64-linux" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:31d4d870b2cb209daa154c7b3aa09db3eb75335c208d2b1606c32bd40db16e1e"
+    "aarch64-linux" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:37a993592c084198923e9574cbbde1673cfa167cd106bd14364997f1f9981cac",
+    "arm-linux" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:afd8feda44731292fd16b816187d04d0def636546756d1e6b3887ce86d5d52b1",
+    "arm64-darwin" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:16bb1a0746215557f5577e4cd289e10cec593d74b5a3033c9bb2ab4bc3c6662f",
+    "x64-mingw-ucrt" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:beeb644d381f71490e34d40f9697ff3c25fca0db4917565e058a2b39a5815bc3",
+    "x64-mingw32" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:9e9454d45a0568f5842fa8933e9905882635951864a07bc986133d5b732b51f0",
+    "x86-linux" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:4167d00276c0ddb0eb4eb2a0fc2a882a9983c8fb5f1979297e77ed28d4b2e924",
+    "x86-mingw32" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:1b2852da28c272a817b733ba1d6576e3b588b90a50f6159fd1b5c85a13ec48ff",
+    "x86_64-darwin" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:ba8e38140f69ae8febe01f8b168782ec1f15cd2e59dd61719fd1176404138062",
+    "x86_64-linux" => "ghcr.io/rake-compiler/rake-compiler-dock-image@sha256:8fc4fe7a195a970e0437033f2147eb191b2ed5eea50f0aeaf8e317fdb1f3ff14"
   }
 end
