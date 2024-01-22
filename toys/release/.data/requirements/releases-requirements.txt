@@ -294,9 +294,9 @@ googleapis-common-protos==1.59.0 \
     --hash=sha256:4168fcb568a826a52f23510412da405abd93f4d23ba544bb68d943b14ba3cb44 \
     --hash=sha256:b287dc48449d1d41af0c69f4ea26242b5ae4c3d7249a38b0984c86a4caffff1f
     # via google-api-core
-idna==3.4 \
-    --hash=sha256:814f528e8dead7d329833b91c5faa87d60bf71824cd12a7530b5526063d02cb4 \
-    --hash=sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2
+idna==3.6 \
+    --hash=sha256:9ecdbbd083b06798ae1e86adcbfe8ab1479cf864e4ee30fe4e46a003d12491ca \
+    --hash=sha256:c05567e9c24a6b9faaa835c4821bad0590fbb9d5779e7caa6e1cc4978e7eb24f
     # via requests
 importlib-metadata==6.8.0 \
     --hash=sha256:3ebb78df84a805d7698245025b975d9d67053cd94c79245ba4b3eb694abe68bb \
