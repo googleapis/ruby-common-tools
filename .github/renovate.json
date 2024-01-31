@@ -2,5 +2,8 @@
   "extends": [
     "config:base"
   ],
+  "ignorePaths": [
+    "toys/release/.data/requirements/**"
+  ],
   "rangeStrategy": "widen"
 }
