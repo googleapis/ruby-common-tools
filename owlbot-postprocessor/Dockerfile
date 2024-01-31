@@ -12,13 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ruby:3.1-bookworm
-RUN mkdir /ruby-postprocessor && gem install toys
+FROM ruby:3.2-bookworm
+RUN apt-get update \
+    && apt-get upgrade \
+    && apt-get -y autoremove \
+    && apt-get -y autoclean
+RUN mkdir /ruby-postprocessor \
+    && gem install toys
 WORKDIR /ruby-postprocessor
 COPY lib/*.rb /ruby-postprocessor/
 COPY lib/owlbot /ruby-postprocessor/owlbot
 COPY *.md /ruby-postprocessor/
-RUN mkdir -p /user-home/.cache && mkdir -p /user-home/.bundle && chmod -R 777 /user-home
+RUN mkdir -p /user-home/.cache \
+    && mkdir -p /user-home/.bundle \
+    && chmod -R 777 /user-home
 ENV HOME=/user-home \
     XDG_CACHE_HOME=/user-home/.cache \
     BUNDLE_PATH=/user-home/.bundle
