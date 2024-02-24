@@ -213,7 +213,7 @@ module OwlBot
       def expand_gemfile
         lines = []
         @other_gems.each do |gem_name|
-          lines += File.readlines("#{gem_name}/Gemfile").select { |line| line.start_with? "gem " }
+          lines += File.readlines("#{gem_name}/Gemfile").select { |line| line =~ /^gem "[\"]+", path:/ }
         end
         File.open "Gemfile", "a" do |file|
           lines.each { |line| file.puts line }

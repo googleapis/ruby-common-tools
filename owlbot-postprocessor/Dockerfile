@@ -14,7 +14,7 @@
 
 FROM ruby:3.2-bookworm
 RUN apt-get update \
-    && apt-get upgrade \
+    && apt-get -y upgrade \
     && apt-get -y autoremove \
     && apt-get -y autoclean
 RUN mkdir /ruby-postprocessor \
