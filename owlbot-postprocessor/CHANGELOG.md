@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.5 (2024-02-24)
+
+#### Bug Fixes
+
+* Second try to fix multiwrapper ([#312](https://github.com/googleapis/ruby-common-tools/issues/312)) 
+
 ### 0.9.4 (2024-02-24)
 
 #### Bug Fixes
