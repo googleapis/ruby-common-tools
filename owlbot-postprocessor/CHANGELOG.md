@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.9.4 (2024-02-24)
+
+#### Bug Fixes
+
+* Fix multiwrapper construction to account for Gemfile changes for Ruby 2.7 ([#310](https://github.com/googleapis/ruby-common-tools/issues/310)) 
+* Run on Ruby 3.2 ([#297](https://github.com/googleapis/ruby-common-tools/issues/297)) 
+
 ### 0.9.3 (2024-01-04)
 
 #### Bug Fixes
