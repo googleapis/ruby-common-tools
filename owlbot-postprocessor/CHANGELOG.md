@@ -1,5 +1,48 @@
 # Changelog
 
+### 0.10.0 (2024-02-24)
+
+### ⚠ BREAKING CHANGES
+
+* Removed preserved paths and reimplemented changelog/version preservation using modifiers
+
+#### Features
+
+* Initial implementation of OwlBot preprocessor for Ruby 
+* Preserve version field in snippet metadata files ([#84](https://github.com/googleapis/ruby-common-tools/issues/84)) 
+* Provide a Ruby content tool ([#97](https://github.com/googleapis/ruby-common-tools/issues/97)) 
+* Support toys in the owlbot postprocessor ([#92](https://github.com/googleapis/ruby-common-tools/issues/92)) 
+* Update repo metadata and snippet metadata for release PRs ([#86](https://github.com/googleapis/ruby-common-tools/issues/86)) 
+* Analyze the library and set library_type in repo-metadata ([#133](https://github.com/googleapis/ruby-common-tools/issues/133)) 
+* Preserve release_level repo metadata field ([#67](https://github.com/googleapis/ruby-common-tools/issues/67)) 
+* Tools for creating multi-wrappers ([#104](https://github.com/googleapis/ruby-common-tools/issues/104)) 
+* Provide a call to update the manifest after post-move changes 
+* Support arguments passed to the postprocessor 
+#### Bug Fixes
+
+* Allow the postprocessor image to do nothing 
+* Build fixes for owlbot-postprocessor 
+* Ensure manifest files end with a newline 
+* Exclude the owlbot manifest file itself from its static file list 
+* Fixes to readme ([#14](https://github.com/googleapis/ruby-common-tools/issues/14)) 
+* Handle symlinks correctly in the owlbot postprocessor 
+* Improve error messages for unexpected staging directory structure 
+* Omit gitignored files from the owlbot static manifest 
+* Preserve working directory if an owlbot script changes it ([#87](https://github.com/googleapis/ruby-common-tools/issues/87)) 
+* Set snippet metadata client version to blank pre-0.1 ([#90](https://github.com/googleapis/ruby-common-tools/issues/90)) 
+* Set up writable directories for bundler installs and toys cache ([#94](https://github.com/googleapis/ruby-common-tools/issues/94)) 
+* Change default release level from unknown to unreleased ([#101](https://github.com/googleapis/ruby-common-tools/issues/101)) 
+* Fix multiwrapper construction to account for Gemfile changes for Ruby 2.7 ([#310](https://github.com/googleapis/ruby-common-tools/issues/310)) 
+* Fixed ruby-doc.org links using the old pre-2022 format ([#140](https://github.com/googleapis/ruby-common-tools/issues/140)) 
+* Remove ruby-doc.org link hack ([#193](https://github.com/googleapis/ruby-common-tools/issues/193)) 
+* Run on Ruby 3.2 ([#297](https://github.com/googleapis/ruby-common-tools/issues/297)) 
+* Second try to fix multiwrapper ([#312](https://github.com/googleapis/ruby-common-tools/issues/312)) 
+* Updates to Ruby and Toys ([#288](https://github.com/googleapis/ruby-common-tools/issues/288)) 
+* Release tooling for owlbot-postprocessor 
+* Release tooling for owlbot-postprocessor 
+* Removed preserved paths and reimplemented changelog/version preservation using modifiers 
+* Support owlbot runs that modify multiple gems 
+
 ### 0.9.5 (2024-02-24)
 
 #### Bug Fixes
