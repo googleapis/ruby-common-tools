@@ -16,12 +16,15 @@ module Yoshi
   class PrGenerator
     DEFAULT_AUTO_APPROVE = "Auto-approved by the Toys pull request generator"
 
-    def initialize yoshi_utils:
+    def initialize yoshi_utils:,
+                   default_cooldown_wait: 0
       @yoshi_utils = yoshi_utils
       @yoshi_utils.gh_verify_binary
       @yoshi_utils.git_verify_binary
       @context = @yoshi_utils.context
       @capturing = false
+      @default_cooldown_wait = default_cooldown_wait
+      @last_time = ::Process.clock_gettime(::Process::CLOCK_MONOTONIC) - default_cooldown_wait
     end
 
     def capture enabled: true,
@@ -33,6 +36,7 @@ module Yoshi
                 auto_approve: false,
                 approval_token: nil,
                 extra_propagation_wait: 5,
+                cooldown_wait: nil,
                 &block
       unless enabled
         @context.logger.info "Pull request generation disabled"
@@ -53,7 +57,8 @@ module Yoshi
       elsif @yoshi_utils.git_clean?
         pr_number = :unchanged
       else
-        pr_number = create_pr branch_name, remote, commit_message, pr_body, extra_propagation_wait
+        cooldown_wait ||= @default_cooldown_wait
+        pr_number = create_pr branch_name, remote, commit_message, pr_body, cooldown_wait, extra_propagation_wait
         update_pr pr_number, labels, auto_approve, approval_token
       end
       finish_capture pr_number, branch_name, saved_branch_name
@@ -80,7 +85,11 @@ module Yoshi
       saved_branch_name
     end
 
-    def create_pr branch_name, remote, commit_message, pr_body, extra_propagation_wait
+    def create_pr branch_name, remote, commit_message, pr_body, cooldown_wait, extra_propagation_wait
+      cur_time = ::Process.clock_gettime ::Process::CLOCK_MONOTONIC
+      allowed_time = @last_time + cooldown_wait
+      sleep allowed_time - cur_time if cur_time < allowed_time
+
       commit_message ||= generate_default_commit_message
       pr_body ||= generate_default_pr_body
 
@@ -98,6 +107,7 @@ module Yoshi
 
       # It sometimes takes a while for the new PR to propagate to GitHub's APIs
       @yoshi_utils.retry ["gh", "pr", "view", pr_number, "--repo", repo_name, "--json=number"]
+      @last_time = ::Process.clock_gettime ::Process::CLOCK_MONOTONIC
       sleep extra_propagation_wait
       pr_number
     end
