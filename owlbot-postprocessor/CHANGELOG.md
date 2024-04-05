@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.6 (2024-04-05)
+
+#### Bug Fixes
+
+* temporary change in postprocessor to require ostruct for test helpers ([#317](https://github.com/googleapis/ruby-common-tools/issues/317)) 
+
 ### 0.9.5 (2024-02-24)
 
 #### Bug Fixes
