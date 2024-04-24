@@ -33,10 +33,6 @@ jobs:
     - name: Install tools
       shell: bash
       run: "bundle install && gem install --no-document toys"
-    # TODO: Remove this temporary fix. See issue #318.
-    - name: Install Minitest 5.22.2
-      shell: bash
-      run: gem install minitest -v 5.22.2
     - name: Build
       shell: bash
       run: toys ci build -v < /dev/null
