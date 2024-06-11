@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.7 (2024-06-11)
+
+#### Bug Fixes
+
+* Fix multi-wrapper dependencies that were broken when dropping Ruby 2.7 ([#328](https://github.com/googleapis/ruby-common-tools/issues/328)) 
+
 ### 0.9.6 (2024-04-05)
 
 #### Bug Fixes
