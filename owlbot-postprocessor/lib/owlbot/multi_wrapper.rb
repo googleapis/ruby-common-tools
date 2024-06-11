@@ -227,7 +227,7 @@ module OwlBot
                        .select { |line| line.start_with? "  gem.add_dependency \"#{gem_name}" }
         end
         content = File.read "#{@final_gem}.gemspec"
-        content = content.sub(/(\n  gem\.add_dependency [^\n]+)\n\n/, "\\1\n#{lines.join}\n")
+        content = content.sub(/(\n  gem\.add_dependency [^\n]+)\nend/, "\\1\n#{lines.join}\n")
         File.write "#{@final_gem}.gemspec", content
       end
 
