@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.8 (2024-06-11)
+
+#### Bug Fixes
+
+* Another postprocessor fix for multi-wrapper ([#330](https://github.com/googleapis/ruby-common-tools/issues/330)) 
+
 ### 0.9.7 (2024-06-11)
 
 #### Bug Fixes
