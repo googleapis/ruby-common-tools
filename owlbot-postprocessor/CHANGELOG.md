@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.9 (2024-07-26)
+
+#### Bug Fixes
+
+* update Ruby and other packages ([#338](https://github.com/googleapis/ruby-common-tools/issues/338)) 
+
 ### 0.9.8 (2024-06-11)
 
 #### Bug Fixes
