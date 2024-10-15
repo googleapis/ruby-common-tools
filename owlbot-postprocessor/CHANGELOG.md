@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.10 (2024-10-15)
+
+#### Bug Fixes
+
+* Update Ruby to 3.3.5 ([#342](https://github.com/googleapis/ruby-common-tools/issues/342)) 
+
 ### 0.9.9 (2024-07-26)
 
 #### Bug Fixes
