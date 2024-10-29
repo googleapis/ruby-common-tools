@@ -78,18 +78,32 @@ end
 
 def load_env
   kokoro_gfile_dir = ENV["KOKORO_GFILE_DIR"]
-  return unless kokoro_gfile_dir
+  if kokoro_gfile_dir
+    # TEMP: Remove after all references to this file are removed for all repos
+    env_vars_path = File.join kokoro_gfile_dir, "ruby_env_vars.json"
+    if File.file? env_vars_path
+      env_vars = JSON.parse File.read env_vars_path
+      env_vars.each { |k, v| ENV[k] ||= v }
+      logger.info "Read environment from GCS"
+    end
 
-  service_account = File.join kokoro_gfile_dir, "service-account.json"
-  raise "#{service_account} is not a file" unless File.file? service_account
-  ENV["GOOGLE_APPLICATION_CREDENTIALS"] = service_account
+    docuploader_service_account_path = File.join kokoro_gfile_dir, "secret_manager", "docuploader_service_account"
+    if File.file? docuploader_service_account_path
+      ENV["DOCUPLOADER_CREDENTIALS"] ||= docuploader_service_account_path
+      logger.info "Read docuploader key from Secret Manager"
+    end
+  end
 
-  filename = File.join kokoro_gfile_dir, "ruby_env_vars.json"
-  raise "#{filename} is not a file" unless File.file? filename
-  env_vars = JSON.parse File.read filename
-  env_vars.each { |k, v| ENV[k] ||= v }
+  kokoro_keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
+  if kokoro_keystore_dir
+    rubygems_api_token_path = "#{kokoro_keystore_dir}/73713_rubygems-publish-key"
+    if File.file? rubygems_api_token_path
+      ENV["RUBYGEMS_API_TOKEN"] ||= File.read rubygems_api_token_path
+      logger.info "Read Rubygems key from Keystore"
+    end
+  end
 
-  ENV["DOCUPLOADER_CREDENTIALS"] ||= File.join kokoro_gfile_dir, "secret_manager", "docuploader_service_account"
+  logger.info "Finished loading environment"
 end
 
 def determine_packages
