@@ -96,11 +96,16 @@ def load_env
 
   kokoro_keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
   if kokoro_keystore_dir
+    logger.info "KOKORO_KEYSTORE_DIR = #{kokoro_keystore_dir}"
+    logger.info "target: #{File.readlink kokoro_keystore_dir}" if File.symlink? kokoro_keystore_dir
+    logger.info capture "ls #{kokoro_keystore_dir}/"
     rubygems_api_token_path = "#{kokoro_keystore_dir}/73713_rubygems-publish-key"
     if File.file? rubygems_api_token_path
       ENV["RUBYGEMS_API_TOKEN"] ||= File.read rubygems_api_token_path
       logger.info "Read Rubygems key from Keystore"
     end
+  else
+    logger.warn "Did not find KOKORO_KEYSTORE_DIR"
   end
 
   logger.info "Finished loading environment"
