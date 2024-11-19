@@ -25,6 +25,8 @@ long_desc \
   "",
   "KOKORO_GFILE_DIR - Base directory for gfile inclusion. Should be set by " \
     "the Kokoro environment. (Required.)",
+  "KOKORO_KEYSTORE_DIR - Base directory for keystore data. Should be set by " \
+    "the Kokoro environment. (Required.)",
   "GAS_SOURCE_GEM - The gfile path (i.e. relative to KOKORO_GFILE_DIR) for " \
     "the source gem input. If a directory is provided, it must contain, " \
     "recursively, exactly one source gem. Required.",
@@ -36,8 +38,9 @@ long_desc \
     "built into binary gems. Optional.",
   "GAS_RUBY_VERSIONS - Colon-delimited list of Ruby versions that should " \
     "be built against. Optional.",
-  "GAS_RUBYGEMS_KEY_FILE - The gfile path to a file that contains the API " \
-    "token for Rubygems, to use for publication. Required."
+  "GAS_RUBYGEMS_KEY_FILE - The keystore path to a file that contains the API " \
+    "token for Rubygems, to use for publication. Should be in the form " \
+    "{keystoreConfigId}_{keyName}. Required."
 
 include :fileutils
 include :exec, e: true
@@ -56,6 +59,7 @@ end
 # See the long description for details.
 def read_input
   gfile_dir = ENV["KOKORO_GFILE_DIR"]
+  keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
   @source_gem = File.join gfile_dir, ENV["GAS_SOURCE_GEM"]
   if File.directory? @source_gem
     candidates = Dir.glob "#{@source_gem}/**/*.gem"
@@ -65,7 +69,7 @@ def read_input
   @additional_gems = ENV["GAS_ADDITIONAL_GEMS"].to_s.split(":").map { |path| File.join gfile_dir, path }
   @platforms = ENV["GAS_PLATFORMS"].tr ":", ","
   @ruby_versions = ENV["GAS_RUBY_VERSIONS"].tr ":", ","
-  @rubygems_key_file = File.join gfile_dir, ENV["GAS_RUBYGEMS_KEY_FILE"]
+  @rubygems_key_file = File.join keystore_dir, ENV["GAS_RUBYGEMS_KEY_FILE"]
   @dry_run = !ENV["GAS_DRY_RUN"].to_s.empty?
   @workspace_dir = ENV["GAS_WORKSPACE_DIR"] || "workspace"
   @artifacts_dir = ENV["GAS_ARTIFACTS_DIR"] || "artifacts"
