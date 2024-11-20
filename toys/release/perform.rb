@@ -79,14 +79,6 @@ end
 def load_env
   kokoro_gfile_dir = ENV["KOKORO_GFILE_DIR"]
   if kokoro_gfile_dir
-    # TEMP: Remove after all references to this file are removed for all repos
-    env_vars_path = File.join kokoro_gfile_dir, "ruby_env_vars.json"
-    if File.file? env_vars_path
-      env_vars = JSON.parse File.read env_vars_path
-      env_vars.each { |k, v| ENV[k] ||= v }
-      logger.info "Read environment from GCS"
-    end
-
     docuploader_service_account_path = File.join kokoro_gfile_dir, "secret_manager", "docuploader_service_account"
     if File.file? docuploader_service_account_path
       ENV["DOCUPLOADER_CREDENTIALS"] ||= docuploader_service_account_path

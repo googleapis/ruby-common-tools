@@ -48,11 +48,12 @@ describe "gas kokoro-trigger" do
   let(:protobuf_env) do
     {
       "KOKORO_GFILE_DIR" => __dir__,
+      "KOKORO_KEYSTORE_DIR" => "#{__dir__}/data2",
       "GAS_SOURCE_GEM" => "data32",
       "GAS_ADDITIONAL_GEMS" => "data2",
       "GAS_PLATFORMS" => gem_platforms.join(":"),
       "GAS_RUBY_VERSIONS" => ruby_versions.join(":"),
-      "GAS_RUBYGEMS_KEY_FILE" => "data2/keyfile.txt",
+      "GAS_RUBYGEMS_KEY_FILE" => "keyfile.txt",
       "GAS_WORKSPACE_DIR" => workspace_dir,
       "GAS_ARTIFACTS_DIR" => artifacts_dir
     }
