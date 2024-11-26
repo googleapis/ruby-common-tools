@@ -27,23 +27,139 @@ flag :gems, "--gems=NAMES" do |f|
   f.desc "Run for the given gems (comma-delimited)"
 end
 flag :force_republish
-flag :rubygems_api_token, "--rubygems-api-token=VALUE"
-flag :docs_staging_bucket, "--docs-staging-bucket=VALUE"
-flag :rad_staging_bucket, "--rad-staging-bucket=VALUE"
-flag :docuploader_credentials, "--docuploader-credentials=VALUE"
+flag :report_to_pr, "--report-to-pr=LINK", default: ENV["AUTORELEASE_PR"]
+flag :reporter_org, "--reporter-org=VALUE"
+flag :reporter_app, "--reporter-app=VALUE"
+flag :reporter_installation, "--reporter-installation=VALUE"
+flag :reporter_pem, "--reporter-pem=VALUE"
+flag :rubygems_api_token, "--rubygems-api-token=VALUE", default: ENV["RUBYGEMS_API_TOKEN"]
+flag :docs_staging_bucket, "--docs-staging-bucket=VALUE", default: ENV["STAGING_BUCKET"]
+flag :rad_staging_bucket, "--rad-staging-bucket=VALUE", default: ENV["V2_STAGING_BUCKET"]
+flag :docuploader_credentials, "--docuploader-credentials=VALUE", default: ENV["DOCUPLOADER_CREDENTIALS"]
 
 include :exec, e: true
 include :gems
 
 def run
+  Dir.chdir context_directory
+  Dir.chdir base_dir if base_dir
+  load_deps
+  load_env
+  start_report
+  @success = false
+  perform_release
+  @success = true
+ensure
+  finish_report
+end
+
+def load_deps
   gem "gems", "~> 1.2"
+  gem "jwt", "~> 2.9"
   require "fileutils"
   require "gems"
   require "json"
-  Dir.chdir context_directory
-  Dir.chdir base_dir if base_dir
-  load_env
-  perform_release
+  require "jwt"
+  require "net/http"
+end
+
+def load_env
+  raise "Did not find KOKORO_GFILE_DIR" unless ENV["KOKORO_GFILE_DIR"]
+  raise "Did not find KOKORO_KEYSTORE_DIR" unless ENV["KOKORO_KEYSTORE_DIR"]
+  secret_manager_dir = File.join ENV["KOKORO_GFILE_DIR"], "secret_manager"
+  keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
+
+  load_param :docuploader_credentials, secret_manager_dir, "docuploader_service_account", from: :path
+  load_param :rubygems_api_token, keystore_dir, "73713_rubygems-publish-key"
+
+  return unless reporter_org && report_to_pr
+  load_param :reporter_app, secret_manager_dir, "releasetool-publish-reporter-app"
+  load_param :reporter_installation, secret_manager_dir, "releasetool-publish-reporter-#{reporter_org}-installation"
+  load_param :reporter_pem, secret_manager_dir, "releasetool-publish-reporter-pem"
+  ENV["GITHUB_TOKEN"] = @reporter_token = acquire_reporter_token
+  extract_pr_info
+end
+
+def load_param param_name, dir, file_name, from: :content
+  return if self[param_name]
+  file_path = File.join dir, file_name
+  if File.file? file_path
+    value =
+      case from
+      when :content
+        File.read file_path
+      when :path
+        file_path
+      else
+        raise ArgumentError, "Unknown value set from #{from.inspect}"
+      end
+    set param_name, value
+    logger.info "Read #{param_name} from environment #{file_name}"
+  else
+    logger.warn "#{param_name} not available from environment #{file_name}"
+  end
+end
+
+def acquire_reporter_token
+  return unless reporter_app && reporter_installation && reporter_pem
+  now = Time.now.to_i - 1
+  payload = { "iat" => now, "exp" => now + 600, "iss" => reporter_app }
+  private_key = OpenSSL::PKey::RSA.new reporter_pem
+  jwt = JWT.encode payload, private_key, "RS256"
+  headers = {
+    "Authorization" => "Bearer #{jwt}",
+    "Accept" => "application/vnd.github.machine-man-preview+json"
+  }
+  uri = URI "https://api.github.com/app/installations/#{reporter_installation}/access_tokens"
+  response = Net::HTTP.post uri, "", headers
+  return unless response.is_a? Net::HTTPSuccess
+  content = JSON.parse response.body rescue {}
+  content["token"]
+end
+
+def extract_pr_info
+  @pr_org = @pr_repo = @pr_number = nil
+  return unless report_to_pr
+  match = report_to_pr.match %r{^https://github\.com/([^/]+)/([^/]+)/pull/(\d+)$}
+  return unless match
+  @pr_org = match[1]
+  @pr_repo = match[2]
+  @pr_number = match[3].to_i
+end
+
+def start_report
+  return unless @pr_number && @reporter_token
+  build_url = ENV["CLOUD_LOGGING_URL"]
+  unless build_url
+    kokoro_build_id = ENV["KOKORO_BUILD_ID"]
+    build_url = "http://sponge/#{kokoro_build_id}" if kokoro_build_id
+  end
+  message =
+    if build_url
+      "The release build has started. The log can be viewed [here](#{build_url}) (internal Google URL). :sunflower:"
+    else
+      "The release build has started, but the build log URL could not be determined. :broken_heart:"
+    end
+  exec ["gh", "pr", "comment", @pr_number, "--repo=#{@pr_org}/#{@pr_repo}", "--body", message], e: false
+end
+
+def finish_report
+  return unless @pr_number && @reporter_token
+  if @success
+    message = ":egg: You hatched a release! The release build finished successfully! :purple_heart:"
+    add_label = "autorelease: published"
+    remove_label = "autorelease: tagged"
+  else
+    message = "The release build failed! Please investigate!"
+    add_label = "autorelease: failed"
+    remove_label = nil
+  end
+  cmd = ["gh", "pr", "comment", @pr_number, "--repo=#{@pr_org}/#{@pr_repo}", "--body", message]
+  exec cmd, e: false
+  cmd = ["gh", "issue", "edit", @pr_number, "--repo=#{@pr_org}/#{@pr_repo}"]
+  cmd += ["--add-label", add_label] if add_label
+  cmd += ["--remove-label", remove_label] if remove_label
+  exec cmd, e: false
 end
 
 def perform_release
@@ -65,41 +181,15 @@ def perform_release_gem name:, version:
                            logger: logger,
                            tool_name: tool_name,
                            cli: cli,
-                           rubygems_api_token: rubygems_api_token || ENV["RUBYGEMS_API_TOKEN"],
-                           docs_staging_bucket: docs_staging_bucket || ENV["STAGING_BUCKET"] || "docs-staging",
-                           rad_staging_bucket: rad_staging_bucket || ENV["V2_STAGING_BUCKET"] || "docs-staging-v2",
-                           docuploader_credentials: docuploader_credentials || ENV["DOCUPLOADER_CREDENTIALS"]
+                           rubygems_api_token: rubygems_api_token,
+                           docs_staging_bucket: docs_staging_bucket || "docs-staging",
+                           rad_staging_bucket: rad_staging_bucket || "docs-staging-v2",
+                           docuploader_credentials: docuploader_credentials
 
   releaser.run force_republish: force_republish,
                enable_docs: enable_docs,
                enable_rad: enable_rad,
                dry_run: dry_run
-end
-
-def load_env
-  kokoro_gfile_dir = ENV["KOKORO_GFILE_DIR"]
-  if kokoro_gfile_dir
-    docuploader_service_account_path = File.join kokoro_gfile_dir, "secret_manager", "docuploader_service_account"
-    if File.file? docuploader_service_account_path
-      ENV["DOCUPLOADER_CREDENTIALS"] ||= docuploader_service_account_path
-      logger.info "Read docuploader key from Secret Manager"
-    end
-  else
-    logger.error "Did not find KOKORO_GFILE_DIR"
-  end
-
-  kokoro_keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
-  if kokoro_keystore_dir
-    rubygems_api_token_path = "#{kokoro_keystore_dir}/73713_rubygems-publish-key"
-    if File.file? rubygems_api_token_path
-      ENV["RUBYGEMS_API_TOKEN"] ||= File.read rubygems_api_token_path
-      logger.info "Read Rubygems key from Keystore"
-    end
-  else
-    logger.error "Did not find KOKORO_KEYSTORE_DIR"
-  end
-
-  logger.info "Finished loading environment"
 end
 
 def determine_packages
