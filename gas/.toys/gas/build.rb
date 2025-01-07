@@ -62,7 +62,7 @@ end
 
 include :exec, e: true
 include :fileutils
-include :gems
+include :gems, on_missing: :install
 include :terminal
 
 # Main entrypoint
@@ -160,6 +160,7 @@ def perform_builds
   require "rake_compiler_dock"
   success = true
   platforms.each do |platform|
+    rm_rf "tmp"
     success &&= build_platform(platform)
   end
   exit 1 unless success
@@ -172,7 +173,9 @@ def build_platform platform
   begin
     logger.info "Building #{platform} ..."
     ENV["RCD_IMAGE"] = Gas::RAKE_COMPILER_DOCK_IMAGE[platform]
-    script = "bundle install --local && bundle exec rake native:#{platform} gem RUBY_CC_VERSION=#{ruby_cc_version}"
+    script = "bundle install --local " \
+      "&& bundle exec rake generate_ruby_cc_version " \
+      "&& bundle exec rake native:#{platform} gem RUBY_CC_VERSION=$(cat ruby-cc-version.txt)"
     RakeCompilerDock.sh script, platform: platform
     artifact_name = "pkg/#{gem_name}-#{gem_version}-#{platform}.gem"
     raise "Expected artifact #{artifact_name} not produced" unless File.file? artifact_name
@@ -194,9 +197,4 @@ def gemspec
     permitted_classes = [Gem::Specification, Gem::Dependency, Gem::Version, Gem::Requirement, Time, Symbol]
     YAML.load_file "#{gem_name}-#{gem_version}.gemspec", permitted_classes: permitted_classes
   end
-end
-
-# Construct the RUBY_CC_VERSION environment variable format
-def ruby_cc_version
-  ruby_versions.map { |ruby| "#{ruby}.0" }.join ":"
 end
