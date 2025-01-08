@@ -29,9 +29,9 @@ describe "gas build" do
     version = match[1].to_i * 100 + match[2].to_i
     version < 302
   }
-  let(:gem_version) { use_older_example ? "3.21.12" : "3.25.2" }
+  let(:gem_version) { @gem_version_override || (use_older_example ? "3.21.12" : "3.25.2") }
   let(:gem_and_version) { "google-protobuf-#{gem_version}" }
-  let(:gem_data_dir) { use_older_example ? "data31" : "data32" }
+  let(:gem_data_dir) { @gem_version_override ? "data33" : use_older_example ? "data31" : "data32" }
   let(:source_gem) { File.join __dir__, gem_data_dir, "#{gem_and_version}.gem" }
   let(:workspace_dir) { Dir.mktmpdir }
   let(:linux_platforms) { ["x86_64-linux", "x86-linux", "aarch64-linux"] }
@@ -43,22 +43,28 @@ describe "gas build" do
   let(:excluded_combinations) { [["x64-mingw32", "3.1"], ["x64-mingw-ucrt", "2.7"]] }
   let(:host_platform) { "#{`uname -m`.strip}-#{`uname -s`.strip.downcase}" }
   let(:host_ruby_version) { RUBY_VERSION.sub(/^(\d+\.\d+).*$/, "\\1") }
+  let(:multi_rubies) { ["3.0", "3.1", "3.2", "3.3", "3.4" ]}
+  let(:gem_version_for_multi_rubies) { "4.29.2" }
+  let(:platform_for_multi_rubies) { "x86_64-linux" }
 
   # Invoke the gas build tool within the test
   def quiet_build platforms, rubies
     result = 0
     out, err = capture_subprocess_io do
-      result = toys_run_tool [
+      result = toys_run_tool([
         "gas", "build", "google-protobuf", gem_version,
         "--workspace-dir", workspace_dir,
         "--source-gem", source_gem,
         "--platform", Array(platforms).join(","),
         "--ruby", Array(rubies).join(","),
-        "--yes"
-      ]
+        "--yes",
+        "--verbose"
+      ])
     end
     unless result.zero?
+      puts "\n******** OUT"
       puts out
+      puts "******** ERR"
       puts err
       flunk "Failed to run gas build: result = #{result}"
     end
@@ -68,6 +74,19 @@ describe "gas build" do
   # earlier test results don't pollute later test inputs.
   after do
     FileUtils.rm_rf workspace_dir
+  end
+
+  it "generates various Ruby versions for protobuf" do
+    @gem_version_override = gem_version_for_multi_rubies
+    quiet_build platform_for_multi_rubies, multi_rubies
+    Dir.chdir "#{workspace_dir}/#{gem_and_version}/pkg/" do
+      assert File.exist? "#{gem_and_version}-#{platform_for_multi_rubies}.gem"
+      FileUtils.rm_r "#{gem_and_version}-#{platform_for_multi_rubies}"
+      exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform_for_multi_rubies}.gem"], out: :null
+      multi_rubies.each do |ruby|
+        assert File.exist? "#{gem_and_version}-#{platform_for_multi_rubies}/lib/google/#{ruby}/protobuf_c.so"
+      end
+    end
   end
 
   it "generates linux platforms for protobuf" do
