@@ -101,6 +101,10 @@ def load_param param_name, dir, file_name, from: :content
 end
 
 def acquire_reporter_token
+  logger.info "Starting acquire_reporter_token"
+  logger.info "Has reporter_app #{reporter_app.inspect}"
+  logger.info "Has reporter_installation #{reporter_installation.inspect}"
+  logger.info "Has reporter_pem" if reporter_pem
   return unless reporter_app && reporter_installation && reporter_pem
   now = Time.now.to_i - 1
   payload = { "iat" => now, "exp" => now + 600, "iss" => reporter_app }
@@ -112,8 +116,10 @@ def acquire_reporter_token
   }
   uri = URI "https://api.github.com/app/installations/#{reporter_installation}/access_tokens"
   response = Net::HTTP.post uri, "", headers
+  logger.info "Token exchange response class #{response.class}"
   return unless response.is_a? Net::HTTPSuccess
   content = JSON.parse response.body rescue {}
+  logger.info "Got token" if content["token"]
   content["token"]
 end
 
@@ -140,7 +146,8 @@ def start_report
     else
       "The release build has started, but the build log URL could not be determined. :broken_heart:"
     end
-  exec ["gh", "pr", "comment", @pr_number, "--repo=#{@pr_org}/#{@pr_repo}", "--body", message], e: false
+  result = exec ["gh", "pr", "comment", @pr_number, "--repo=#{@pr_org}/#{@pr_repo}", "--body", message], e: false
+  logger.error "Comment on PR failed with #{result.exit_code}" unless result.success?
 end
 
 def finish_report
@@ -155,11 +162,13 @@ def finish_report
     remove_label = nil
   end
   cmd = ["gh", "pr", "comment", @pr_number, "--repo=#{@pr_org}/#{@pr_repo}", "--body", message]
-  exec cmd, e: false
+  result = exec cmd, e: false
+  logger.error "Final comment on PR failed with #{result.exit_code}" unless result.success?
   cmd = ["gh", "issue", "edit", @pr_number, "--repo=#{@pr_org}/#{@pr_repo}"]
   cmd += ["--add-label", add_label] if add_label
   cmd += ["--remove-label", remove_label] if remove_label
-  exec cmd, e: false
+  result = exec cmd, e: false
+  logger.error "Label removal on PR failed with #{result.exit_code}" unless result.success?
 end
 
 def perform_release
