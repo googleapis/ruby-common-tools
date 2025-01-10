@@ -37,7 +37,7 @@ describe "gas publish" do
     result = 0
     out = err = nil
     block = proc do
-      result = toys_run_tool(["gas", "publish"] + args)
+      result = toys_run_tool(["gas", "publish", "--yes"] + args)
     end
     if noisy
       block.call

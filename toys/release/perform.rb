@@ -103,29 +103,30 @@ end
 def acquire_reporter_token
   return unless reporter_app && reporter_installation && reporter_pem
   logger.info "Acquiring pull request reporter token from GitHub..."
+  uri = URI "https://api.github.com/app/installations/#{reporter_installation}/access_tokens"
+  response = Net::HTTP.post uri, "", build_oauth_headers
+  unless response.is_a? Net::HTTPSuccess
+    logger.error "Failed GitHub oauth exchange. Response of type #{response.class}"
+    return nil
+  end
+  content = JSON.parse response.body rescue {}
+  if content["token"]
+    logger.info "Token acquired"
+  else
+    logger.error "Token couldn't be found in GitHub oauth response"
+  end
+  content["token"]
+end
+
+def build_oauth_headers
   now = Time.now.to_i - 1
   payload = { "iat" => now, "exp" => now + 600, "iss" => reporter_app }
   private_key = OpenSSL::PKey::RSA.new reporter_pem
   jwt = JWT.encode payload, private_key, "RS256"
-  headers = {
+  {
     "Authorization" => "Bearer #{jwt}",
     "Accept" => "application/vnd.github.machine-man-preview+json"
   }
-  uri = URI "https://api.github.com/app/installations/#{reporter_installation}/access_tokens"
-  response = Net::HTTP.post uri, "", headers
-  logger.info "Token exchange response class #{response.class}"
-  if response.is_a? Net::HTTPSuccess
-    content = JSON.parse response.body rescue {}
-    if content["token"]
-      logger.info "Token acquired"
-    else
-      logger.error "Token couldn't be found in GitHub oauth response"
-    end
-    content["token"]
-  else
-    logger.error "Failed GitHub oauth exchange. Response of type #{response.class}"
-    nil
-  end
 end
 
 def extract_pr_info
@@ -152,7 +153,7 @@ def start_report
       "The release build has started, but the build log URL could not be determined. :broken_heart:"
     end
   result = exec ["gh", "pr", "comment", @pr_number, "--repo=#{@pr_org}/#{@pr_repo}", "--body", message], e: false
-  logger.error "Comment on PR failed with ex=#{result.exception.inspect} code=#{result.exit_code.inspect}" unless result.success?
+  report_exec_errors result, "Initial comment on PR"
 end
 
 def finish_report
@@ -168,12 +169,12 @@ def finish_report
   end
   cmd = ["gh", "pr", "comment", @pr_number, "--repo=#{@pr_org}/#{@pr_repo}", "--body", message]
   result = exec cmd, e: false
-  logger.error "Final comment on PR failed with ex=#{result.exception.inspect} code=#{result.exit_code.inspect}" unless result.success?
+  report_exec_errors result, "Final comment on PR"
   cmd = ["gh", "issue", "edit", @pr_number, "--repo=#{@pr_org}/#{@pr_repo}"]
   cmd += ["--add-label", add_label] if add_label
   cmd += ["--remove-label", remove_label] if remove_label
   result = exec cmd, e: false
-  logger.error "Label removal on PR failed with ex=#{result.exception.inspect} code=#{result.exit_code.inspect}" unless result.success?
+  report_exec_errors result, "Label update on PR"
 end
 
 def perform_release
@@ -247,6 +248,11 @@ def lookup_current_versions regex
   end
   raise "Something went wrong getting all current gem versions" if versions.empty?
   versions
+end
+
+def report_exec_errors result, description
+  return if result.success?
+  logger.error "#{description} failed with ex=#{result.exception.inspect} code=#{result.exit_code.inspect}"
 end
 
 class Performer
