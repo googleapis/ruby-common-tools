@@ -1,4 +1,0 @@
-cryptography==39.0.2
-gcp-docuploader==0.6.5
-gcp-releasetool==1.17.0
-importlib-metadata==7.0.1
