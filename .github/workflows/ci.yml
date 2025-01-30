@@ -14,11 +14,21 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
+            ruby: "3.3"
+            build: false
+            jobs: "--only --rubocop"
+          - os: ubuntu-latest
             ruby: "3.1"
+            build: true
+            jobs: "--only --test"
           - os: ubuntu-latest
             ruby: "3.3"
+            build: true
+            jobs: "--only --test"
           - os: ubuntu-latest
             ruby: "3.4"
+            build: true
+            jobs: "--only --test"
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -28,16 +38,17 @@ jobs:
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: "${{ matrix.ruby }}"
-    - name: Install NodeJS 18.x
+    - name: Install NodeJS 20.x
       uses: actions/setup-node@v4
       with:
-        node-version: "18.x"
-    - name: Install tools
+        node-version: "20.x"
+    - name: Install tools and deps
       shell: bash
-      run: "bundle install && gem install --no-document toys"
+      run: "gem install --no-document toys && bundle install"
     - name: Build
+      if: ${{ matrix.build }}
       shell: bash
       run: toys ci build -v < /dev/null
     - name: Test
       shell: bash
-      run: toys ci < /dev/null
+      run: toys ci ${{ matrix.jobs }} < /dev/null
