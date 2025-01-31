@@ -54,8 +54,10 @@ ensure
 end
 
 def load_deps
+  # TODO: Update gems to "~> 1.3" after we drop Ruby 3.0 support and can vendor
+  # gems 1.3.0 in the docker image.
   gem "gems", "~> 1.2"
-  gem "jwt", "~> 2.9"
+  gem "jwt", "~> 2.10"
   require "fileutils"
   require "gems"
   require "json"
@@ -65,19 +67,23 @@ end
 
 def load_env
   raise "Did not find KOKORO_GFILE_DIR" unless ENV["KOKORO_GFILE_DIR"]
-  raise "Did not find KOKORO_KEYSTORE_DIR" unless ENV["KOKORO_KEYSTORE_DIR"]
   secret_manager_dir = File.join ENV["KOKORO_GFILE_DIR"], "secret_manager"
   keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
+  logger.warn "Did not find KOKORO_KEYSTORE_DIR" unless keystore_dir
 
   load_param :docuploader_credentials, secret_manager_dir, "docuploader_service_account", from: :path
-  load_param :rubygems_api_token, keystore_dir, "73713_rubygems-publish-key"
+  load_param :rubygems_api_token, keystore_dir, "73713_rubygems-publish-key" if keystore_dir
+  load_param :rubygems_api_token, secret_manager_dir, "ruby-rubygems-token"
 
-  return unless reporter_org && report_to_pr
-  load_param :reporter_app, secret_manager_dir, "releasetool-publish-reporter-app"
-  load_param :reporter_installation, secret_manager_dir, "releasetool-publish-reporter-#{reporter_org}-installation"
-  load_param :reporter_pem, secret_manager_dir, "releasetool-publish-reporter-pem"
-  ENV["GITHUB_TOKEN"] = ENV["GH_TOKEN"] = @reporter_token = acquire_reporter_token
-  extract_pr_info
+  if reporter_org && report_to_pr
+    load_param :reporter_app, secret_manager_dir, "releasetool-publish-reporter-app"
+    load_param :reporter_installation, secret_manager_dir, "releasetool-publish-reporter-#{reporter_org}-installation"
+    load_param :reporter_pem, secret_manager_dir, "releasetool-publish-reporter-pem"
+    ENV["GITHUB_TOKEN"] = ENV["GH_TOKEN"] = @reporter_token = acquire_reporter_token
+    extract_pr_info
+  end
+
+  nil
 end
 
 def load_param param_name, dir, file_name, from: :content
