@@ -414,6 +414,7 @@ class Performer
         logger.warn "**** In dry run mode. Skipping upload"
         return
       end
+      temp_check_docuploader_credentials
       docuploader_cmd = [
         "python3", "-m", "docuploader", "upload", ".",
         "--credentials", docuploader_credentials,
@@ -422,6 +423,14 @@ class Performer
       ] + extra_docuploader_args
       @executor.exec docuploader_cmd
     end
+  end
+
+  def temp_check_docuploader_credentials
+    require "digest"
+    puts docuploader_credentials
+    data = File.read docuploader_credentials
+    puts data.size
+    puts Digest::MD5.hexdigest data
   end
 
   def run_aux_task task_name, remove: []
