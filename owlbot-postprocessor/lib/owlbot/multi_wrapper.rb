@@ -211,13 +211,21 @@ module OwlBot
       end
 
       def expand_gemfile
-        lines = []
+        content = File.read "Gemfile"
+        match = /local_dependencies = \[(.*)\]/.match content
+        return unless match
+        local_deps = match[1].split(/,\s*/)
+
         @other_gems.each do |gem_name|
-          lines += File.readlines("#{gem_name}/Gemfile").select { |line| line =~ /^gem\s*"[^"]+",\s*path:/ }
+          content = File.read "#{gem_name}/Gemfile"
+          match = /local_dependencies = \[(.*)\]/.match content
+          next unless match
+          local_deps += match[1].split(/,\s*/)
         end
-        File.open "Gemfile", "a" do |file|
-          lines.each { |line| file.puts line }
-        end
+
+        local_deps = local_deps.uniq.join ", "
+        content.sub!(/local_dependencies = \[.*\]/, "local_dependencies = [#{local_deps}]")
+        File.write "Gemfile", content
       end
 
       def expand_gemspec_dependencies
