@@ -748,4 +748,78 @@ describe OwlBot do
       assert_gem_file "hello.txt", "hello world\n"
     end
   end
+
+  it "runs multi-wrapper" do
+    create_staging_file "my-gem/Gemfile", <<~RUBY
+      source "https://rubygems.org"
+      gemspec
+      local_dependencies = ["my-gem-v1", "my-gem-v2"]
+      puts local_dependencies
+    RUBY
+    create_staging_file "my-gem/my-gem.gemspec", <<~RUBY
+      Gem::Specification.new do |gem|
+        gem.add_dependency "my-gem-v1", "~>1.0"
+        gem.add_dependency "my-gem-v2", "~>1.0"
+      end
+    RUBY
+    create_staging_file "my-gem/.repo-metadata.json", <<~JSON
+      {"name_pretty": "My Gem"}
+    JSON
+    create_staging_file "my-gem/lib/my-gem.rb", <<~RUBY
+      require "my-gem/entrypoint"
+    RUBY
+    create_staging_file "my-gem/README.md", <<~TEXT
+      Gems: [my-gem-v1](https://example.com/v1) and [my-gem-v2](https://example.com/v2)...
+    TEXT
+    create_staging_file "my-second-gem/Gemfile", <<~RUBY
+      source "https://rubygems.org"
+      gemspec
+      local_dependencies = ["my-second-gem-v1", "my-second-gem-v2"]
+      puts local_dependencies
+    RUBY
+    create_staging_file "my-second-gem/my-second-gem.gemspec", <<~RUBY
+      Gem::Specification.new do |gem|
+        gem.add_dependency "my-second-gem-v1", "~>2.0"
+        gem.add_dependency "my-second-gem-v2", "~>2.0"
+      end
+    RUBY
+    create_staging_file "my-second-gem/README.md", <<~TEXT
+      Gems: [my-second-gem-v1](https://example.com/w1) and [my-second-gem-v2](https://example.com/w2)...
+    TEXT
+    create_staging_file "my-second-gem/lib/my/second/gem/version.rb", <<~RUBY
+      module MySecondGem
+        VERSION = "1.2.3"
+      end
+    RUBY
+    create_gem_file ".owlbot.rb", <<~RUBY
+      OwlBot.prepare_multi_wrapper [
+        "my-gem",
+        "my-second-gem"
+      ]
+      OwlBot.move_files
+    RUBY
+
+    invoke_owlbot
+
+    assert_gem_file "Gemfile", <<~RUBY
+      source "https://rubygems.org"
+      gemspec
+      local_dependencies = ["my-gem-v1", "my-gem-v2", "my-second-gem-v1", "my-second-gem-v2"]
+      puts local_dependencies
+    RUBY
+    assert_gem_file "lib/my/second/gem/version.rb", <<~RUBY
+      module MySecondGem
+        # @private Unused
+        VERSION = ""
+      end
+    RUBY
+    assert_gem_file "my-gem.gemspec", <<~RUBY
+      Gem::Specification.new do |gem|
+        gem.add_dependency "my-gem-v1", "~>1.0"
+        gem.add_dependency "my-gem-v2", "~>1.0"
+        gem.add_dependency "my-second-gem-v1", "~>2.0"
+        gem.add_dependency "my-second-gem-v2", "~>2.0"
+      end
+    RUBY
+  end
 end
