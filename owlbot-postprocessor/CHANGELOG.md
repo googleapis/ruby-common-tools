@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.11 (2025-02-04)
+
+#### Bug Fixes
+
+* Update multiwrapper gemfile adjustment to work with generator 0.42.1 ([#360](https://github.com/googleapis/ruby-common-tools/issues/360)) 
+
 ### 0.9.10 (2024-10-15)
 
 #### Bug Fixes
