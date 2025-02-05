@@ -206,7 +206,7 @@ def perform_release_gem name:, version:
                            docs_staging_bucket: docs_staging_bucket || "docs-staging",
                            rad_staging_bucket: rad_staging_bucket || "docs-staging-v2",
                            docuploader_credentials: docuploader_credentials,
-                           docuploader_tries: 3
+                           docuploader_tries: 5
 
   releaser.run force_republish: force_republish,
                enable_rad: enable_rad,
