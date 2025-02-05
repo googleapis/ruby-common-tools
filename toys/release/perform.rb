@@ -208,7 +208,6 @@ def perform_release_gem name:, version:
                            docuploader_credentials: docuploader_credentials
 
   releaser.run force_republish: force_republish,
-               enable_docs: enable_docs,
                enable_rad: enable_rad,
                dry_run: dry_run
 end
