@@ -217,8 +217,8 @@ module OwlBot
         local_deps = match[1].split(/,\s*/)
 
         @other_gems.each do |gem_name|
-          content = File.read "#{gem_name}/Gemfile"
-          match = /local_dependencies = \[(.*)\]/.match content
+          content2 = File.read "#{gem_name}/Gemfile"
+          match = /local_dependencies = \[(.*)\]/.match content2
           next unless match
           local_deps += match[1].split(/,\s*/)
         end
