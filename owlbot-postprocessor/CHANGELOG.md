@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.13 (2025-02-05)
+
+#### Bug Fixes
+
+* Another multiwrapper Gemfile fix ([#365](https://github.com/googleapis/ruby-common-tools/issues/365)) 
+
 ### 0.9.12 (2025-02-05)
 
 #### Bug Fixes
