@@ -69,6 +69,7 @@ module OwlBot
           adjust_rubocop_yml
           adjust_yardopts
           adjust_gemspec
+          adjust_gemfile
           adjust_authentication_md
           adjust_readme_md
           disable_version @main_gem
@@ -162,6 +163,12 @@ module OwlBot
                               "gem.summary\\1= \"API client library for the #{@pretty_name}\"\n")
         File.write "#{@final_gem}.gemspec", content
         File.delete "#{@main_gem}.gemspec"
+      end
+
+      def adjust_gemfile
+        content = File.read "Gemfile"
+        content = content.gsub "\"#{@main_gem}.gemspec\"", "\"#{@final_gem}.gemspec\""
+        File.write "Gemfile", content
       end
 
       def adjust_authentication_md
