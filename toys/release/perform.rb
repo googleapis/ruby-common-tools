@@ -205,7 +205,8 @@ def perform_release_gem name:, version:
                            rubygems_api_token: rubygems_api_token,
                            docs_staging_bucket: docs_staging_bucket || "docs-staging",
                            rad_staging_bucket: rad_staging_bucket || "docs-staging-v2",
-                           docuploader_credentials: docuploader_credentials
+                           docuploader_credentials: docuploader_credentials,
+                           docuploader_tries: 3
 
   releaser.run force_republish: force_republish,
                enable_rad: enable_rad,
@@ -267,6 +268,7 @@ class Performer
                  docs_staging_bucket: nil,
                  rad_staging_bucket: nil,
                  docuploader_credentials: nil,
+                 docuploader_tries: nil,
                  last_version: nil,
                  logger: nil,
                  tool_name: nil,
@@ -284,6 +286,7 @@ class Performer
     @rad_staging_bucket = rad_staging_bucket
     @docuploader_credentials = docuploader_credentials
     @current_rubygems_version = Gem::Version.new last_version if last_version
+    @docuploader_tries = docuploader_tries || 1
     @bundle_updated = false
   end
 
@@ -419,8 +422,17 @@ class Performer
         "--staging-bucket", staging_bucket,
         "--metadata-file", "./docs.metadata"
       ] + extra_docuploader_args
-      @executor.exec docuploader_cmd
+      exec_with_retry docuploader_cmd, @docuploader_tries
     end
+  end
+
+  def exec_with_retry cmd, tries
+    @executor.exec cmd
+  rescue RuntimeError => e
+    tries -= 1
+    raise e unless tries.positive?
+    logger.warn "**** Retrying command after error: #{e}"
+    retry
   end
 
   def run_aux_task task_name, remove: []
