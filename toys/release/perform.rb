@@ -71,7 +71,9 @@ def load_env
   keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
   logger.warn "Did not find KOKORO_KEYSTORE_DIR" unless keystore_dir
 
-  load_param :docuploader_credentials, secret_manager_dir, "docuploader_service_account", from: :path
+  # TEMP: Ignoring docuploader credentials from secret manager to see if the
+  # ones from ADC work.
+  # load_param :docuploader_credentials, secret_manager_dir, "docuploader_service_account", from: :path
   load_param :rubygems_api_token, keystore_dir, "73713_rubygems-publish-key" if keystore_dir
   load_param :rubygems_api_token, secret_manager_dir, "ruby-rubygems-token"
 
@@ -408,10 +410,6 @@ class Performer
         "--language", "ruby",
         "--version", "v#{gem_version}"
       ]
-      unless docuploader_credentials
-        logger.warn "**** No credentials available. Skipping upload"
-        return
-      end
       if dry_run
         logger.warn "**** In dry run mode. Skipping upload"
         return
@@ -421,7 +419,9 @@ class Performer
         "--credentials", docuploader_credentials,
         "--staging-bucket", staging_bucket,
         "--metadata-file", "./docs.metadata"
-      ] + extra_docuploader_args
+      ]
+      docuploader_cmd += ["--credentials", docuploader_credentials] if docuploader_credentials
+      docuploader_cmd += extra_docuploader_args
       exec_with_retry docuploader_cmd, @docuploader_tries
     end
   end
