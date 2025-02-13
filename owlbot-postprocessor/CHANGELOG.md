@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.9.14 (2025-02-13)
+
+#### Bug Fixes
+
+* Update Ruby version and fix repeated references in multiwrapper readmes ([#372](https://github.com/googleapis/ruby-common-tools/issues/372)) 
+
 ### 0.9.13 (2025-02-05)
 
 #### Bug Fixes
