@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ruby:3.3.5-bookworm
+FROM ruby:3.3.7-bookworm
 RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get -y autoremove \
     && apt-get -y autoclean
 RUN mkdir /ruby-postprocessor \
-    && gem install toys
+    && gem install toys:0.15.6 rexml:3.4.0
 WORKDIR /ruby-postprocessor
 COPY lib/*.rb /ruby-postprocessor/
 COPY lib/owlbot /ruby-postprocessor/owlbot
