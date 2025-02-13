@@ -252,12 +252,13 @@ module OwlBot
           File.readlines("#{gem_name}/README.md").each do |line|
             if line =~ %r{^(\[#{gem_name}-v\d\w*\]\(https:[^)]+\))[.,]\n$}
               lines << Regexp.last_match[1]
+              break # in case there are multiple lines in the readme, only take the first
             end
           end
         end
         lines = lines.join ",\n"
         content = File.read "README.md"
-        content = content.sub %r{(\n\[#{@main_gem}-v\d\w*\]\(https:[^)]+\))\.\n}, "\\1,\n#{lines}.\n"
+        content = content.gsub %r{(\n\[#{@main_gem}-v\d\w*\]\(https:[^)]+\))\.\n}, "\\1,\n#{lines}.\n"
         File.write "README.md", content
       end
 
