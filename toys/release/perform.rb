@@ -63,6 +63,7 @@ def load_deps
   require "json"
   require "jwt"
   require "net/http"
+  require "tmpdir"
 end
 
 def load_env
@@ -71,9 +72,7 @@ def load_env
   keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
   logger.warn "Did not find KOKORO_KEYSTORE_DIR" unless keystore_dir
 
-  # TEMP: Ignoring docuploader credentials from secret manager to see if the
-  # ones from ADC work.
-  # load_param :docuploader_credentials, secret_manager_dir, "docuploader_service_account", from: :path
+  load_param :docuploader_credentials, secret_manager_dir, "docuploader_service_account", from: :path
   load_param :rubygems_api_token, keystore_dir, "73713_rubygems-publish-key" if keystore_dir
   load_param :rubygems_api_token, secret_manager_dir, "ruby-rubygems-token"
 
@@ -396,43 +395,84 @@ class Performer
         return
       end
       run_docuploader staging_bucket: rad_staging_bucket,
-                      extra_docuploader_args: ["--destination-prefix", "docfx"],
+                      dest_prefix: "docfx-",
                       dry_run: dry_run
     end
   end
 
-  def run_docuploader staging_bucket:, extra_docuploader_args: [], dry_run: false
-    Dir.chdir "doc" do
-      @executor.exec [
-        "python3", "-m", "docuploader", "create-metadata",
-        "--name", gem_name,
-        "--distribution-name", gem_name,
-        "--language", "ruby",
-        "--version", "v#{gem_version}"
-      ]
+  def run_docuploader staging_bucket:, dest_prefix: "", dry_run: false
+    logger.info "**** Starting docuploader"
+    Dir.mktmpdir do |tmpdir|
+      archive_path = File.join tmpdir, "archive.tar.gz"
+      Dir.chdir "doc" do
+        metadata_path = "./docs.metadata"
+        write_docs_metadata metadata_path: metadata_path
+        make_docs_archive archive_path: archive_path
+      end
       if dry_run
         logger.warn "**** In dry run mode. Skipping upload"
-        return
+      else
+        upload_docs_archive archive_path: archive_path, staging_bucket: staging_bucket, dest_prefix: dest_prefix
       end
-      docuploader_cmd = [
-        "python3", "-m", "docuploader", "upload", ".",
-        "--credentials", docuploader_credentials,
-        "--staging-bucket", staging_bucket,
-        "--metadata-file", "./docs.metadata"
-      ]
-      docuploader_cmd += ["--credentials", docuploader_credentials] if docuploader_credentials
-      docuploader_cmd += extra_docuploader_args
-      exec_with_retry docuploader_cmd, @docuploader_tries
     end
   end
 
-  def exec_with_retry cmd, tries
-    @executor.exec cmd
-  rescue RuntimeError => e
-    tries -= 1
-    raise e unless tries.positive?
-    logger.warn "**** Retrying command after error: #{e}"
-    retry
+  def write_docs_metadata metadata_path:
+    update_time = Time.now
+    content = <<~CONTENT
+      update_time {
+        seconds: #{update_time.to_i}
+        nanos: #{update_time.nsec}
+      }
+      name: "#{gem_name}"
+      version: "v#{gem_version}"
+      language: "ruby"
+      distribution_name: "#{gem_name}"
+    CONTENT
+    File.write metadata_path, content
+    logger.info "**** Created docs.metadata"
+  end
+
+  def make_docs_archive archive_path:
+    logger.info "**** Creating docs archive..."
+    cmd = [
+      "tar", "--create",
+      "--directory=.",
+      "--file=#{archive_path}",
+      "--force-local",
+      "--gzip",
+      "--verbose",
+      "."
+    ]
+    result = @executor.exec cmd, result_callback: nil
+    unless result.success?
+      logger.warn "**** Failed to create docs archive. Retrying without --force-local."
+      cmd.delete "--force-local"
+      @executor.exec cmd
+    end
+    logger.info "**** Created docs archive: #{archive_path}"
+  end
+
+  def upload_docs_archive archive_path:, staging_bucket:, dest_prefix:
+    logger.info "**** Uploading archive..."
+    dest_url = "gs://#{staging_bucket}/#{dest_prefix}ruby-#{gem_name}-v#{gem_version}.tar.gz"
+    cmd = ["gcloud", "storage", "cp", archive_path, dest_url]
+    opts = { result_callback: nil }
+    opts[:env] = { "GOOGLE_APPLICATION_CREDENTIALS" => docuploader_credentials } if docuploader_credentials
+    tries = @docuploader_tries
+    loop do
+      result = @executor.exec cmd, **opts
+      if result.success?
+        logger.info "**** Uploaded archive to: #{dest_url}"
+        break
+      end
+      tries -= 1
+      unless tries.positive?
+        logger.error "**** Upload failed after retries"
+        raise "Failed"
+      end
+      logger.warn "**** Retrying command after error"
+    end
   end
 
   def run_aux_task task_name, remove: []
