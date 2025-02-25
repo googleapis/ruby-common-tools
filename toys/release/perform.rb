@@ -72,7 +72,11 @@ def load_env
   keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
   logger.warn "Did not find KOKORO_KEYSTORE_DIR" unless keystore_dir
 
-  # load_param :docuploader_credentials, secret_manager_dir, "docuploader_service_account", from: :path
+  # TODO: We may be able to stop loading this from secret manager, as we've
+  # confirmed that ADC creds (at least on the google-cloud-ruby release jobs)
+  # are sufficient for docuploader. Strip this out once we've confirmed that
+  # is also the case for other release jobs we support.
+  load_param :docuploader_credentials, secret_manager_dir, "docuploader_service_account", from: :path
   load_param :rubygems_api_token, keystore_dir, "73713_rubygems-publish-key" if keystore_dir
   load_param :rubygems_api_token, secret_manager_dir, "ruby-rubygems-token"
 
