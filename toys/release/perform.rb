@@ -72,7 +72,7 @@ def load_env
   keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
   logger.warn "Did not find KOKORO_KEYSTORE_DIR" unless keystore_dir
 
-  load_param :docuploader_credentials, secret_manager_dir, "docuploader_service_account", from: :path
+  # load_param :docuploader_credentials, secret_manager_dir, "docuploader_service_account", from: :path
   load_param :rubygems_api_token, keystore_dir, "73713_rubygems-publish-key" if keystore_dir
   load_param :rubygems_api_token, secret_manager_dir, "ruby-rubygems-token"
 
