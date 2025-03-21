@@ -34,18 +34,30 @@ describe "gas build" do
   let(:gem_data_dir) { @gem_version_override ? "data33" : use_older_example ? "data31" : "data32" }
   let(:source_gem) { File.join __dir__, gem_data_dir, "#{gem_and_version}.gem" }
   let(:workspace_dir) { Dir.mktmpdir }
-  let(:linux_platforms) { ["x86_64-linux-musl", "x86-linux-gnu", "aarch64-linux"] }
+  let(:linux_platforms_without_variants) { ["x86_64-linux", "x86-linux", "aarch64-linux", "arm-linux"] }
+  let(:linux_platforms_with_variants) {
+    [
+      "x86_64-linux-gnu", "x86_64-linux-musl",
+      "x86-linux-gnu", "x86-linux-musl",
+      "aarch64-linux-gnu", "aarch64-linux-musl",
+      "arm-linux-gnu", "arm-linux-musl"
+    ]
+  }
   let(:darwin_platforms) { ["x86_64-darwin", "arm64-darwin"] }
   let(:windows_platforms) { ["x86-mingw32", "x64-mingw32", "x64-mingw-ucrt"] }
   let(:all_platforms) { linux_platforms + darwin_platforms + windows_platforms }
   let(:exec_service) { Toys::Utils::Exec.new }
-  let(:windows_ruby_versions) { ["2.7", "3.1"] }
-  let(:excluded_combinations) { [["x64-mingw32", "3.1"], ["x64-mingw-ucrt", "2.7"]] }
+  let(:windows_ruby_versions) { ["3.0", "3.4"] }
+  # Per rake-compiler-dock instructions:
+  # `x64-mingw-ucrt` should be used for Ruby 3.1 and later on windows.
+  # `x64-mingw32` should be used for Ruby 3.0 and earlier. This is to match the
+  # changed platform of RubyInstaller-3.1.
+  let(:excluded_combinations) { [["x64-mingw32", "3.4"], ["x64-mingw-ucrt", "3.0"]] }
   let(:host_platform) { "#{`uname -m`.strip}-#{`uname -s`.strip.downcase}" }
   let(:host_ruby_version) { RUBY_VERSION.sub(/^(\d+\.\d+).*$/, "\\1") }
   let(:multi_rubies) { ["3.1", "3.2", "3.3", "3.4" ]}
   let(:gem_version_for_multi_rubies) { "4.29.2" }
-  let(:platform_for_multi_rubies) { "x86_64-linux" }
+  let(:platform_for_multi_rubies) { "x86_64-linux-gnu" }
 
   # Invoke the gas build tool within the test
   def quiet_build platforms, rubies
@@ -89,10 +101,22 @@ describe "gas build" do
     end
   end
 
-  it "generates linux platforms for protobuf" do
-    quiet_build linux_platforms, host_ruby_version
+  it "generates linux platforms without libc variants for protobuf" do
+    quiet_build linux_platforms_without_variants, host_ruby_version
     Dir.chdir "#{workspace_dir}/#{gem_and_version}/pkg/" do
-      linux_platforms.each do |platform|
+    linux_platforms_without_variants.each do |platform|
+        assert File.exist? "#{gem_and_version}-#{platform}.gem"
+        FileUtils.rm_r "#{gem_and_version}-#{platform}"
+        exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform}.gem"], out: :null
+        assert File.exist? "#{gem_and_version}-#{platform}/lib/google/protobuf_c.so"
+      end
+    end
+  end
+
+  it "generates linux platforms with libc variants for protobuf" do
+    quiet_build linux_platforms_with_variants, host_ruby_version
+    Dir.chdir "#{workspace_dir}/#{gem_and_version}/pkg/" do
+    linux_platforms_with_variants.each do |platform|
         assert File.exist? "#{gem_and_version}-#{platform}.gem"
         FileUtils.rm_r "#{gem_and_version}-#{platform}"
         exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform}.gem"], out: :null
