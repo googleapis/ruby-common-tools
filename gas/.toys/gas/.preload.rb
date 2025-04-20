@@ -26,7 +26,6 @@ module Gas
     "aarch64-linux-musl",
     "arm64-darwin",
     "x64-mingw-ucrt",
-    "x64-mingw32",
     "x86-linux-gnu",
     "x86-linux-musl",
     "x86-mingw32",

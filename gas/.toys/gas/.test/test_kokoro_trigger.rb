@@ -60,7 +60,7 @@ describe "gas kokoro-trigger" do
   end
   let(:excluded_versions) do
     {
-      "x64-mingw32" => ["3.1", "3.2"],
+      "x64-mingw32" => ["3.1", "3.2", "3.3", "3.4"],
       "x64-mingw-ucrt" => ["2.7", "3.0"]
     }
   end
