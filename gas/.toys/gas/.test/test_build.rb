@@ -44,6 +44,7 @@ describe "gas build" do
     ]
   }
   let(:darwin_platforms) { ["x86_64-darwin", "arm64-darwin"] }
+  # TODO: Remove `x64-mingw32` when Ruby 3.0 support is completely dropped
   let(:windows_platforms) { ["x86-mingw32", "x64-mingw32", "x64-mingw-ucrt"] }
   let(:all_platforms) { linux_platforms_without_variants + linux_platforms_with_variants + darwin_platforms + windows_platforms }
   let(:exec_service) { Toys::Utils::Exec.new }
