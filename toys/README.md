@@ -5,6 +5,8 @@ used across multiple Google Cloud SDK Ruby language repositories.
 
 Specifically:
 
+* `/toys/batch-review` provides an implementation of a batch reviewer. It must
+  be configured and instantiated (see example in google-cloud-ruby).
 * `/toys/gapic` provides a common set of tools used by GAPIC libraries,
   including builds, various test types, and CI.
 * `/toys/release` provides the Ruby release system, including tools for
