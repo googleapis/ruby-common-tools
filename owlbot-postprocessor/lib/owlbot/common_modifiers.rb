@@ -86,7 +86,7 @@ module OwlBot
           type =
             if gem_name !~ /-v\d+\w*$/
               "GAPIC_MANUAL"
-            elsif previous_static_files.any? { |path| path =~ %r{lib/.*\.rb$} }
+            elsif previous_static_files.any? { |path2| path2 =~ %r{lib/.*\.rb$} }
               "GAPIC_COMBO"
             else
               "GAPIC_AUTO"

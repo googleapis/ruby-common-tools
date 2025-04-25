@@ -45,10 +45,6 @@ jobs:
     - name: Install tools and deps
       shell: bash
       run: "gem install --no-document toys && bundle install"
-    - name: Build
-      if: ${{ matrix.build }}
-      shell: bash
-      run: toys ci build -v < /dev/null
     - name: Test
       shell: bash
-      run: toys ci ${{ matrix.jobs }} < /dev/null
+      run: toys ci ${{ matrix.jobs }} --include-owlbot-build --github-event-name=${{ github.event_name }} --github-event-payload=${{ github.event_path }} < /dev/null
