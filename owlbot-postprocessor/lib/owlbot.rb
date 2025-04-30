@@ -314,10 +314,10 @@ module OwlBot
     # @return [Toys::Utils::Exec::Result] The result, if the process ran in the
     #     foreground.
     #
-    def toys cmd, **opts, &block
+    def toys(cmd, **opts, &)
       @toys_bin_path ||= `which toys`.strip
       cmd = [@toys_bin_path] + cmd
-      @impl.exec_service.exec cmd, **opts, &block
+      @impl.exec_service.exec(cmd, **opts, &)
     end
 
     ##
