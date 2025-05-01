@@ -54,9 +54,7 @@ ensure
 end
 
 def load_deps
-  # TODO: Update gems to "~> 1.3" after we drop Ruby 3.0 support and can vendor
-  # gems 1.3.0 in the docker image.
-  gem "gems", "~> 1.2"
+  gem "gems", "~> 1.3"
   gem "jwt", "~> 2.10"
   require "fileutils"
   require "gems"
@@ -192,18 +190,18 @@ def perform_release
   if gems
     gems.each do |gem|
       gem_name, gem_version = (lookup_current_versions Regexp.new "^#{gem}$").first
-      perform_release_gem name: gem_name, version: gem_version
+      perform_release_gem name: gem_name, last_version: gem_version
     end
   else
-    determine_packages.each do |name, version|
-      perform_release_gem name: name, version: version
+    determine_packages.each do |name, last_version|
+      perform_release_gem name: name, last_version: last_version
     end
   end
 end
 
-def perform_release_gem name:, version:
+def perform_release_gem name:, last_version:
   releaser = Performer.new name,
-                           last_version: version,
+                           last_version: last_version,
                            logger: logger,
                            tool_name: tool_name,
                            cli: cli,
@@ -227,25 +225,45 @@ def determine_packages
       name = File.dirname path
       packages[name] = current_versions[name] if regex.match? name
     end
+  elsif package
+    packages[package] = nil
   else
-    packages[package || package_from_context] = nil
+    packages_from_context.each { |pack| packages[pack] = nil }
   end
   packages
 end
 
-def package_from_context
-  return ENV["RELEASE_PACKAGE"] unless ENV["RELEASE_PACKAGE"].to_s.empty?
-  tags = Array(ENV["KOKORO_GIT_COMMIT"])
-  logger.info "Got #{tags.inspect} from KOKORO_GIT_COMMIT"
-  tags += capture(["git", "describe", "--exact-match", "--tags"], err: :null, e: false).strip.split
-  logger.info "All tags: #{tags.inspect}"
+def packages_from_context
+  pack = ENV["RELEASE_PACKAGE"]
+  unless pack.to_s.empty?
+    logger.info "Releasing #{pack} from RELEASE_PACKAGE"
+    return [pack]
+  end
+  commit = ENV["KOKORO_GIT_COMMIT"]
+  if commit =~ %r{^([^/]+)/v\d+\.\d+\.\d+$}
+    pack = Regexp.last_match[1]
+    logger.info "Releasing #{pack.inspect} from KOKORO_GIT_COMMIT tag #{commit.inspect}"
+    return [pack]
+  end
+  packages = packages_from_head_tags
+  if packages.empty?
+    logger.error "No release tags found for curent commit #{commit.inspect}"
+    exit 1
+  end
+  logger.info "Releasing #{packages.inspect} from HEAD tags"
+  packages
+end
+
+def packages_from_head_tags
+  tags = capture(["git", "tag", "--points-at", "HEAD"], err: :null, e: false).strip.split
+  logger.info "All tags for HEAD: #{tags.inspect}"
+  result = []
   tags.each do |tag|
     if tag =~ %r{^([^/]+)/v\d+\.\d+\.\d+$}
-      return Regexp.last_match[1]
+      result << Regexp.last_match[1]
     end
   end
-  logger.error "Unable to determine package from context"
-  exit 1
+  result
 end
 
 def lookup_current_versions regex
