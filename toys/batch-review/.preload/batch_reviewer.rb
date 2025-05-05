@@ -68,6 +68,7 @@ module Yoshi
     end
 
     def config preset_name: nil,
+               preset: nil,
                only_titles: nil,
                omit_titles: nil,
                only_users: nil,
@@ -76,18 +77,17 @@ module Yoshi
                omit_labels: nil,
                only_ids: nil,
                omit_ids: nil,
-               expectation_expressions: nil,
                message: nil,
                detail: nil,
                automerge: false,
                edit_message: false,
                edit_detail: false,
                assert_diffs_clean: false,
-               merge_delay: 0,
+               merge_delay: nil,
                max_diff_size: nil,
                editor: nil,
                dry_run: false
-      preset = @presets[preset_name] || Preset.new
+      preset ||= @presets[preset_name] || Preset.new
       @pull_request_filter = preset.pull_request_filter
       @pull_request_filter.only_titles only_titles
       @pull_request_filter.omit_titles omit_titles
@@ -98,7 +98,6 @@ module Yoshi
       @pull_request_filter.only_ids Array(only_ids).map{ |spec| parse_ids spec }
       @pull_request_filter.omit_ids Array(omit_ids).map{ |spec| parse_ids spec }
       @diff_expectations = preset.diff_expectations
-      parse_expectation_expressions Array(expectation_expressions)
       message = message[1..].to_sym if message.to_s.start_with? ":"
       @message = message || preset.message
       detail = detail[1..].to_sym if detail.to_s.start_with? ":"
@@ -128,12 +127,20 @@ module Yoshi
                                         diff_expectations: @diff_expectations
       @context.logger.info "Found #{@pull_requests.size} pull requests"
       check_assert_diffs_clean if @assert_diffs_clean
+      @merge_delay ||= default_merge_delay @pull_requests.size
       @pull_requests.each_with_index { |pr, index| handle_pr pr, index + 1 }
       @context.puts
       @context.puts "Totals: #{@merged_count} merged and #{@skipped_count} skipped out of #{@pull_requests.size}", :bold
     end
 
     private
+
+    def default_merge_delay count
+      delay = count / 2
+      delay = 15 if delay > 15
+      @context.logger.info "Defaulting merge delay to #{delay} seconds"
+      delay
+    end
 
     def parse_ids expr
       case expr
@@ -150,60 +157,6 @@ module Yoshi
         expr..expr
       else
         raise "Unknown IDs format: #{expr.inspect}"
-      end
-    end
-
-    def parse_expectation_expressions expressions
-      cur_expectation = nil
-      expressions.each do |expr|
-        cmd, param = expr.split "=", 2
-        cmd.downcase!
-        case cmd
-        when "expect"
-          cur_expectation = @diff_expectations.get param
-          unless cur_expectation
-            cur_expectation = DiffExpectation.new
-            @diff_expectations.expect cur_expectation, name: param
-          end
-        when "clear"
-          raise "Need to start expectation configs with 'expect'" unless cur_expectation
-          cur_expectation.clear!
-        when "desc"
-          raise "Need to start expectation configs with 'expect'" unless cur_expectation
-          raise "desc requires a parameter" unless param
-          cur_expectation.desc param
-        when "created", "deleted", "changed", "indented"
-          raise "Need to start expectation configs with 'expect'" unless cur_expectation
-          cur_expectation.change_type cmd.to_sym
-        when "path"
-          raise "Need to start expectation configs with 'expect'" unless cur_expectation
-          raise "path requires a parameter" unless param
-          cur_expectation.path_pattern Regexp.new param
-        when "allow-add"
-          raise "Need to start expectation configs with 'expect'" unless cur_expectation
-          raise "allow-add requires a parameter" unless param
-          cur_expectation.allowed_addition Regexp.new param
-        when "allow-del"
-          raise "Need to start expectation configs with 'expect'" unless cur_expectation
-          raise "allow-del requires a parameter" unless param
-          cur_expectation.allowed_deletion Regexp.new param
-        when "require-add"
-          raise "Need to start expectation configs with 'expect'" unless cur_expectation
-          raise "require-add requires a parameter" unless param
-          cur_expectation.required_addition Regexp.new param
-        when "require-del"
-          raise "Need to start expectation configs with 'expect'" unless cur_expectation
-          raise "require-del requires a parameter" unless param
-          cur_expectation.required_deletion Regexp.new param
-        when "deny-add"
-          raise "Need to start expectation configs with 'expect'" unless cur_expectation
-          raise "deny-add requires a parameter" unless param
-          cur_expectation.denied_addition Regexp.new param
-        when "deny-del"
-          raise "Need to start expectation configs with 'expect'" unless cur_expectation
-          raise "deny-del requires a parameter" unless param
-          cur_expectation.denied_deletion Regexp.new param
-        end
       end
     end
 
@@ -559,7 +512,7 @@ module Yoshi
       def clear!
         @desc = nil
         @path_patterns = []
-        @change_type = "any"
+        @change_type = :any
         @allowed_additions = []
         @allowed_deletions = []
         @required_additions = []
@@ -572,7 +525,7 @@ module Yoshi
         if val.nil?
           @change_type
         else
-          @change_type = val
+          @change_type = val.to_sym
           self
         end
       end
@@ -958,6 +911,10 @@ module Yoshi
       attr_reader :batch_reviewer
 
       on_expand do |template|
+        cur_preset = Preset.new
+        cur_expectation = nil
+        config_started = false
+
         desc "Mass code review tool"
 
         long_desc \
@@ -967,12 +924,12 @@ module Yoshi
           "",
           "In a nutshell, batch-reviewer:",
           "* Selects a set of pull requests based on criteria that can " \
-            "include title, user, and labels",
+            "include title, user, and labels.",
           "* Analyzes the diffs in the selected pull requests and compares " \
-            "then to a set of configurable expected diffs",
+            "then to a set of configurable expected diffs.",
           "* Either autoapproves and automerges pull requests whose diffs " \
             "conform to expectations, or interactively displays unexpected " \
-            "diffs and prompts whether to merge or skip",
+            "diffs and prompts whether to merge or skip.",
           "",
           "In many cases, you can use a preset configuration by passing its " \
             "name as an argument. Presets generally set a particular filter " \
@@ -984,21 +941,33 @@ module Yoshi
           "",
           "To automerge pull requests with expected diffs, pass --automerge. " \
             "This mode will skip any pull requests with unexpected diffs. " \
-            "It is also recommended to set --merge-delay=15 or greater to " \
-            "avoid GitHub quotas on the rate of pull request merges. " \
             "If --automerge is not passed, merges are done interactively; " \
             "any unexpected diffs are displayed, and the tool prompts for " \
             "confirmation on each merge."
 
-        flag :config, accept: template.batch_reviewer.preset_names do |flag|
-          flag.desc "The name of an optional preset configuration"
-          flag.long_desc "The name of an optional preset configuration. Supported values are:", ""
+        flag :preset, "--config NAME", accept: template.batch_reviewer.preset_names do
+          desc "The name of an optional preset configuration"
+          long_desc \
+            "The name of an optional preset configuration, representing a " \
+              "starting point for the review setup. It includes pull request " \
+              "selectors, expected diffs, and commit message settings. You " \
+              "can pass additional flags to further modify the configuration.",
+            "Supported values are:", ""
           template.batch_reviewer.preset_names.each do |name|
-            flag.long_desc "* #{name}: #{template.batch_reviewer.lookup_preset(name).desc}"
+            long_desc "* #{name}: #{template.batch_reviewer.lookup_preset(name).desc}"
+          end
+          handler do |config|
+            # TODO: Return a UsageError instead of raising, once Toys supports it
+            raise "Cannot set a config after a config or expectation has already been set" if config_started
+            config_started = true
+            cur_preset = template.batch_reviewer.lookup_preset config
           end
         end
 
         flag_group desc: "Pull request selectors" do
+          long_desc \
+            "These flags filter the set of pull requests that will be " \
+              "considered by this tool."
           flag :only_title_re, accept: Regexp, handler: :push, default: [],
                desc: "a regex that matches pull request titles to select"
           flag :only_title, accept: String, handler: :push, default: [],
@@ -1015,15 +984,35 @@ module Yoshi
                desc: "pull request label to select"
           flag :omit_label, accept: String, handler: :push, default: [],
                desc: "pull request label to omit"
-          flag :only_ids, accept: String, handler: :push, default: [],
-               desc: "pull request ID or range of IDs to select"
-          flag :omit_ids, accept: String, handler: :push, default: [],
-               desc: "pull request ID or range of IDs to omit"
+          flag :only_ids, accept: String, handler: :push, default: [] do
+            desc "pull request ID or range of IDs to select"
+            long_desc \
+              "Pull request ID or range of IDs to select.",
+              "This flag may be provided multiple times. Each value can be " \
+              "either an integer or a range (inclusive of endpoints) " \
+              "separated by a hyphen."
+          end
+          flag :omit_ids, accept: String, handler: :push, default: [] do
+            desc "pull request ID or range of IDs to omit"
+            long_desc \
+              "Pull request ID or range of IDs to omit.",
+              "This flag may be provided multiple times. Each value can be " \
+              "either an integer or a range (inclusive of endpoints) " \
+              "separated by a hyphen."
+          end
         end
 
         flag_group desc: "Commit messages" do
-          flag :message, accept: String,
-               desc: "custom commit message, or :pr_title, :pr_title_number, or :shared"
+          flag :message, accept: String do
+            desc "custom commit message, or :pr_title, :pr_title_number, or :shared"
+            long_desc \
+              "The commit message to use.",
+              "The value can be either a static commit message, or one of " \
+                "the following special values (omitting the backticks):",
+              "* `:pr_title` - use the pull request title",
+              "* `:pr_title_number` - use the pull request title and number",
+              "* `:shared` - reuse first commit's message"
+          end
           flag :detail, accept: String,
                desc: "custom commit message detail, or :none or :shared"
           flag :edit_message,
@@ -1036,19 +1025,159 @@ module Yoshi
 
         flag_group desc: "Execution options" do
           flag :automerge,
-              desc: "automatically merge pull requests whose diffs satisfy expectations"
+               desc: "automatically merge pull requests whose diffs satisfy expectations"
           flag :assert_diffs_clean,
-              desc: "assert that all selected pull request diffs satisfy expectations"
-          flag :merge_delay, accept: Integer, default: 0,
-              desc: "delay in seconds between subsequent merges"
+               desc: "assert that all selected pull request diffs satisfy expectations"
+          flag :merge_delay, accept: Integer,
+               desc: "delay in seconds between subsequent merges"
           flag :max_diff_size, accept: Integer, default: 500,
-              desc: "maximum size in lines for displaying unexpected diffs"
+               desc: "maximum size in lines for displaying unexpected diffs"
           flag :dry_run,
-              desc: "execute in dry run mode, which does not approve or merge pull requests"
+               desc: "execute in dry run mode, which does not approve or merge pull requests"
         end
 
-        remaining_args :expectation_expressions do
-          desc "expectation expressions"
+        flag_group desc: "Expectations" do
+          long_desc \
+            "Expectations are descriptions of file diffs. If a file in a " \
+              "pull request's diff matches an expectation, the file is " \
+              "omitted from display in the batch reviewer. This helps remove " \
+              "clutter so reviews can focus on the interesting diffs.",
+            "",
+            "You can set up zero or more expectations. Each has an optional " \
+              "name and description, and each will contain criteria that can " \
+              "match file paths, types of change (e.g. file created or " \
+              "modified), and actual diffs (lines added and removed). Any " \
+              "pull request file that matches at least one expectation is " \
+              "omitted from display. You can also configure batch review " \
+              "to automerge any pull requests whose file diffs ALL match " \
+              "expectation.",
+            "",
+            "To configure an expectation, start with the `--expect` flag. " \
+              "Then subsequently provide other flags in this group to " \
+              "specify how that expectation is configured. To configure more " \
+              "than one expectation, use `--expect` again to finish " \
+              "configuring the current expectation and start a new one. You " \
+              "can also optionally give an expectation a name; this will let " \
+              "you \"re-open\" the expectation later to modify its " \
+              "configuration. This is often used to modify expectations " \
+              "configured in a preset configuration."
+          flag :expect, "--expect[=NAME]" do
+            desc "start configuring a diff expectation"
+            handler do |name|
+              name = nil unless name.is_a? String
+              config_started = true
+              cur_expectation = cur_preset.diff_expectations.get name
+              unless cur_expectation
+                cur_expectation = DiffExpectation.new
+                cur_preset.diff_expectations.expect cur_expectation, name: name
+              end
+              cur_expectation
+            end
+          end
+          flag :desc, "--desc=DESC" do
+            desc "set a description for the current expectation"
+            handler do |desc|
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --desc" unless cur_expectation
+              cur_expectation.desc desc
+            end
+          end
+          flag :clear do
+            desc "clear the current expectation"
+            handler do
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --clear" unless cur_expectation
+              cur_expectation.clear!
+            end
+          end
+          flag :created do
+            desc "configure the current expectation to expect newly created files"
+            handler do
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --created" unless cur_expectation
+              cur_expectation.change_type :created
+            end
+          end
+          flag :deleted do
+            desc "configure the current expectation to expect deleted files"
+            handler do
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --deleted" unless cur_expectation
+              cur_expectation.change_type :deleted
+            end
+          end
+          flag :changed do
+            desc "configure the current expectation to expect modified files"
+            handler do
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --changed" unless cur_expectation
+              cur_expectation.change_type :changed
+            end
+          end
+          flag :indented do
+            desc "configure the current expectation to expect reindented files"
+            handler do
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --indented" unless cur_expectation
+              cur_expectation.change_type :indented
+            end
+          end
+          flag :path, "--path=REGEX" do
+            desc "expect a file path matching the given regex"
+            handler do |regex|
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --path" unless cur_expectation
+              cur_expectation.path_pattern Regexp.new regex
+            end
+          end
+          flag :allow_add, "--allow-add=REGEX", "--add=REGEX" do
+            desc "expect an added content line matching the given regex"
+            handler do |regex|
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --allow-add" unless cur_expectation
+              cur_expectation.allowed_addition Regexp.new regex
+            end
+          end
+          flag :allow_del, "--allow-del=REGEX", "--del=REGEX" do
+            desc "expect a deleted content line matching the given regex"
+            handler do |regex|
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --allow-del" unless cur_expectation
+              cur_expectation.allowed_deletion Regexp.new regex
+            end
+          end
+          flag :require_add, "--require-add=REGEX" do
+            desc "require an added content line matching the given regex"
+            handler do |regex|
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --require-add" unless cur_expectation
+              cur_expectation.required_addition Regexp.new regex
+            end
+          end
+          flag :require_del, "--require-del=REGEX" do
+            desc "require a deleted content line matching the given regex"
+            handler do |regex|
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --require-del" unless cur_expectation
+              cur_expectation.required_deletion Regexp.new regex
+            end
+          end
+          flag :deny_add, "--deny-add=REGEX" do
+            desc "disallow an added content line matching the given regex"
+            handler do |regex|
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --deny-add" unless cur_expectation
+              cur_expectation.denied_addition Regexp.new regex
+            end
+          end
+          flag :denydel, "--deny-del=REGEX" do
+            desc "disallow a deleted content line matching the given regex"
+            handler do |regex|
+              # TODO: Return a UsageError instead of raising, once Toys supports it
+              raise "need to start an expectation with --expect before using --deny-del" unless cur_expectation
+              cur_expectation.denied_deletion Regexp.new regex
+            end
+          end
         end
 
         static :batch_reviewer, template.batch_reviewer
@@ -1057,7 +1186,7 @@ module Yoshi
         include :terminal
 
         def run
-          batch_reviewer.config preset_name: config,
+          batch_reviewer.config preset: preset,
                                 only_titles: only_title_re + only_title,
                                 omit_titles: omit_title_re + omit_title,
                                 only_users: only_user,
@@ -1066,7 +1195,6 @@ module Yoshi
                                 omit_labels: omit_label,
                                 only_ids: only_ids,
                                 omit_ids: omit_ids,
-                                expectation_expressions: expectation_expressions,
                                 message: message,
                                 detail: detail,
                                 automerge: automerge,
