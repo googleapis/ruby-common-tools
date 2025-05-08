@@ -78,10 +78,8 @@ module Yoshi
                only_ids: nil,
                omit_ids: nil,
                message: nil,
-               detail: nil,
-               automerge: false,
                edit_message: false,
-               edit_detail: false,
+               automerge: false,
                assert_diffs_clean: false,
                merge_delay: nil,
                max_diff_size: nil,
@@ -98,25 +96,19 @@ module Yoshi
       @pull_request_filter.only_ids Array(only_ids).map{ |spec| parse_ids spec }
       @pull_request_filter.omit_ids Array(omit_ids).map{ |spec| parse_ids spec }
       @diff_expectations = preset.diff_expectations
-      message = message[1..].to_sym if message.to_s.start_with? ":"
-      @message = message || preset.message
-      detail = detail[1..].to_sym if detail.to_s.start_with? ":"
-      @detail = detail || preset.detail
       @automerge = automerge
-      @edit_message = edit_message
-      @edit_detail = edit_detail
       @assert_diffs_clean = assert_diffs_clean
       @merge_delay = merge_delay
       @max_diff_size = max_diff_size
+      @message = parse_message message, preset, automerge
+      @edit_message = edit_message
       @editor = editor || ENV["EDITOR"] || "/bin/nano"
       @dry_run = dry_run
-      validate_config
+      raise "Automerge must be off to support editing commit messages" if @edit_message && @automerge
     end
 
     def run context
       @context = context
-      @last_message = ""
-      @last_detail = ""
       @next_timestamp = Process.clock_gettime Process::CLOCK_MONOTONIC
       @merged_count = 0
       @skipped_count = 0
@@ -134,6 +126,29 @@ module Yoshi
     end
 
     private
+
+    def parse_message message, preset, automerge
+      message = preset.message if message.nil? || message.empty?
+      if message.nil? || message.empty?
+        if automerge
+          raise "--message is required if --automerge is specified"
+        else
+          message = [:pr_title]
+        end
+      end
+      Array(message).map do |line|
+        case line
+        when :pr_title, ":pr_title"
+          :pr_title
+        when :pr_title_number, ":pr_title_number"
+          :pr_title_number
+        when Symbol, /^:/
+          raise "Unknown message code: #{line}"
+        else
+          line.to_s
+        end
+      end
+    end
 
     def default_merge_delay count
       delay = count / 2
@@ -160,18 +175,6 @@ module Yoshi
       end
     end
 
-    def validate_config
-      if (@edit_message || @edit_detail) && @automerge
-        raise "Automerge must be off to support editing messages or details"
-      end
-      if @message == :shared && !@edit_message
-        raise "Edit messages must be active to support shared messages"
-      end
-      if @detail == :shared && !@edit_detail
-        raise "Edit detail must be active to support shared details"
-      end
-    end
-
     def check_runtime_environment
       unless @context.exec(["gh", "--version"]).success?
         raise "Could not find the GitHub CLI. See https://cli.github.com/manual/ for install instructions."
@@ -188,7 +191,7 @@ module Yoshi
         next if pr.fully_expected?
         pr.diff_files.each do |file|
           next if file.matching_expectation
-          @context.puts "PR##{pr.id}: File #{file.path} not expected.", :red, :bold
+          @context.puts "PR##{pr.id}: File #{file.path} does not match expectations.", :red, :bold
         end
         failure = true
       end
@@ -198,8 +201,8 @@ module Yoshi
     def handle_pr pr, index
       if @automerge
         if pr.fully_expected?
-          resolve_message_and_detail pr do |message, detail|
-            do_merge pr, index, message, detail
+          resolve_message pr do |message|
+            do_merge pr, index, message
           end
           @merged_count += 1
         else
@@ -208,36 +211,24 @@ module Yoshi
         end
       else
         display_pr pr, index
-        confirm_pr pr, index do |message, detail|
-          do_merge pr, index, message, detail
+        confirm_pr pr, index do |message|
+          do_merge pr, index, message
         end
       end
     end
 
-    def resolve_message_and_detail pr
-      message =
-        case @message
-        when :shared
-          @last_message
+    def resolve_message pr
+      message = @message.map do |line|
+        case line
         when :pr_title
-          pr.title
+          pr.title.dup
         when :pr_title_number
           "#{pr.title} (##{pr.id})"
-        when String
-          @message.dup
         else
-          ""
+          line.dup
         end
-      detail =
-        case @detail
-        when :shared
-          @last_detail
-        when String
-          @detail.dup
-        else
-          ""
-        end
-      yield message, detail
+      end
+      yield message.join "\n"
     end
 
     def display_pr pr, index
@@ -270,13 +261,11 @@ module Yoshi
     end
 
     def confirm_pr pr, index
-      resolve_message_and_detail pr do |message, detail|
+      resolve_message pr do |message|
         @context.puts "Message: #{message.inspect}" unless @edit_message
-        @context.puts "Detail: #{detail.inspect}" unless @edit_detail
         if @context.confirm "Merge? ", default: true
-          message = @context.ask("Message: ", default: message) if @edit_message
-          detail = detail_editor detail if @edit_detail
-          yield message, detail
+          message = run_editor message if @edit_message
+          yield message
           @merged_count += 1
         else
           @context.puts "Skipped: PR##{pr.id} #{pr.title.inspect} (#{index}/#{@pull_requests.size})", :bold, :yellow
@@ -285,25 +274,22 @@ module Yoshi
       end
     end
 
-    def detail_editor detail
+    def run_editor message
       require "tempfile"
-      file = Tempfile.new "commit-detail"
+      file = Tempfile.new "commit-message"
       begin
-        file.write "#{detail.strip}\n\n# Edit the commit details here.\n# Lines beginning with a hash are stripped.\n"
+        file.write "#{message.strip}\n\n# Edit the commit message here.\n# Lines beginning with a hash are stripped.\n"
         file.rewind
         @context.exec [@editor, file.path]
-        detail = file.read.gsub(/^#[^\n]*\n?/, "").strip
+        file.read.gsub(/^#[^\n]*\n?/, "").strip
       ensure
         file.close
         file.unlink
       end
-      detail
     end
 
-    def do_merge pr, index, message, detail
+    def do_merge pr, index, message
       message = pr.custom_message message
-      @last_message = message
-      @last_detail = detail
       if @dry_run
         @context.puts "Dry run: PR##{pr.id} #{pr.title.inspect} (#{index}/#{@pull_requests.size})", :bold, :green
         return
@@ -323,9 +309,10 @@ module Yoshi
         "status" => "405",
         "message" => "Merge already in progress"
       }]
+      title, detail = message.split "\n", 2
       retry_gh ["-XPUT", "repos/#{@repo}/pulls/#{pr.id}/merge",
                 "--field", "merge_method=squash",
-                "--field", "commit_title=#{message}",
+                "--field", "commit_title=#{title}",
                 "--field", "commit_message=#{detail}"],
                name: "gh pull request merge",
                passing_errors: passing_errors
@@ -360,8 +347,7 @@ module Yoshi
       def initialize
         @pull_request_filter = PullRequestFilter.new
         @diff_expectations = DiffExpectationSet.new
-        @message = :pr_title_number
-        @detail = :none
+        @message = []
         @desc = "(no description provided)"
         yield self if block_given?
       end
@@ -371,7 +357,6 @@ module Yoshi
         copy.pull_request_filter = @pull_request_filter.clone
         copy.diff_expectations = @diff_expectations.clone
         copy.message = @message.dup
-        copy.detail = @detail.dup
         copy.desc = @desc.dup
         copy
       end
@@ -379,7 +364,6 @@ module Yoshi
       attr_accessor :pull_request_filter
       attr_accessor :diff_expectations
       attr_accessor :message
-      attr_accessor :detail
       attr_accessor :desc
     end
 
@@ -732,7 +716,7 @@ module Yoshi
 
       def raw_diff_data
         @raw_diff_data ||= begin
-          cmd = ["curl", "-s", "https://patch-diff.githubusercontent.com/raw/#{@repo}/pull/#{id}.diff"]
+          cmd = ["curl", "-s", "-f", "https://patch-diff.githubusercontent.com/raw/#{@repo}/pull/#{id}.diff"]
           @context.capture cmd, e: true
         end
       end
@@ -777,11 +761,8 @@ module Yoshi
       end
 
       def custom_message message
-        if lib_name && message =~ /^(\w+):\s+(\S.*)$/
-          "#{Regexp.last_match[1]}(#{lib_name}): #{Regexp.last_match[2]}"
-        else
-          message
-        end
+        return message unless lib_name
+        message.gsub(/^(feat|docs|fix)(!?):\s+(\S.*)$/, "\\1(#{lib_name})\\2: \\3")
       end
 
       private
@@ -1003,22 +984,20 @@ module Yoshi
         end
 
         flag_group desc: "Commit messages" do
-          flag :message, accept: String do
-            desc "custom commit message, or :pr_title, :pr_title_number, or :shared"
+          flag :message, accept: String, handler: :push, default: [] do
+            desc "custom commit messager"
             long_desc \
-              "The commit message to use.",
+              "Specify the commit message to use. This flag can be provided " \
+                "multiple times to specify a multi-line message. The " \
+                "--message must be specified explicitly if --automerge is " \
+                "in effect, otherwise it defaults to `:pr_title`.",
               "The value can be either a static commit message, or one of " \
                 "the following special values (omitting the backticks):",
               "* `:pr_title` - use the pull request title",
-              "* `:pr_title_number` - use the pull request title and number",
-              "* `:shared` - reuse first commit's message"
+              "* `:pr_title_number` - use the pull request title and number"
           end
-          flag :detail, accept: String,
-               desc: "custom commit message detail, or :none or :shared"
           flag :edit_message,
-               desc: "edit the commit message"
-          flag :edit_detail,
-               desc: "edit the commit message detail"
+               desc: "edit the commit message in an editor for each merge"
           flag :editor, accept: String,
                desc: "path to the editor program to use for editing commit message details"
         end
@@ -1196,10 +1175,8 @@ module Yoshi
                                 only_ids: only_ids,
                                 omit_ids: omit_ids,
                                 message: message,
-                                detail: detail,
-                                automerge: automerge,
                                 edit_message: edit_message,
-                                edit_detail: edit_detail,
+                                automerge: automerge,
                                 assert_diffs_clean: assert_diffs_clean,
                                 merge_delay: merge_delay,
                                 max_diff_size: max_diff_size,
