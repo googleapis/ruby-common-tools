@@ -717,7 +717,20 @@ module Yoshi
       def raw_diff_data
         @raw_diff_data ||= begin
           cmd = ["curl", "-s", "-f", "https://patch-diff.githubusercontent.com/raw/#{@repo}/pull/#{id}.diff"]
-          @context.capture cmd, e: true
+          result = @context.exec cmd, out: :capture
+          if result.success?
+            result.captured_out
+          else
+            @context.logger.warn "Failed to retrieve patch. We could be hitting a rate limit. Waiting 60 seconds..."
+            sleep 60
+            result = @context.exec cmd, out: :capture
+            if result.success?
+              result.captured_out
+            else
+              @context.logger.error "Failed a second time to retrieve patch. Aborting."
+              @context.exit 1
+            end
+          end
         end
       end
 
