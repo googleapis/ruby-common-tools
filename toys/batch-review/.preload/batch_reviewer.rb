@@ -78,7 +78,7 @@ module Yoshi
                only_ids: nil,
                omit_ids: nil,
                message: nil,
-               edit_message: false,
+               edit_message: nil,
                automerge: false,
                assert_diffs_clean: false,
                merge_delay: nil,
@@ -100,11 +100,9 @@ module Yoshi
       @assert_diffs_clean = assert_diffs_clean
       @merge_delay = merge_delay
       @max_diff_size = max_diff_size
-      @message = parse_message message, preset, automerge
-      @edit_message = edit_message
+      config_message message, preset, edit_message, automerge
       @editor = editor || ENV["EDITOR"] || "/bin/nano"
       @dry_run = dry_run
-      raise "Automerge must be off to support editing commit messages" if @edit_message && @automerge
     end
 
     def run context
@@ -127,20 +125,24 @@ module Yoshi
 
     private
 
-    def parse_message message, preset, automerge
+    def config_message message, preset, edit_message, automerge
+      if automerge
+        raise "Automerge must be off to support editing commit messages" if edit_message
+        edit_message = false
+      end
       message = preset.message if message.nil? || message.empty?
       if message.nil? || message.empty?
-        if automerge
-          raise "--message is required if --automerge is specified"
-        else
-          message = [:pr_title]
-        end
+        raise "--message is required if --automerge is specified" if automerge
+        message = [:pr_title]
       end
-      Array(message).map do |line|
+      found_auto_message = false
+      @message = Array(message).map do |line|
         case line
         when :pr_title, ":pr_title"
+          found_auto_message = true
           :pr_title
         when :pr_title_number, ":pr_title_number"
+          found_auto_message = true
           :pr_title_number
         when Symbol, /^:/
           raise "Unknown message code: #{line}"
@@ -148,6 +150,7 @@ module Yoshi
           line.to_s
         end
       end
+      @edit_message = edit_message.nil? ? found_auto_message : edit_message
     end
 
     def default_merge_delay count
@@ -344,40 +347,31 @@ module Yoshi
     end
 
     class Preset
-      def initialize
-        @pull_request_filter = PullRequestFilter.new
-        @diff_expectations = DiffExpectationSet.new
-        @message = []
-        @desc = "(no description provided)"
+      def initialize pull_request_filter: nil, diff_expectations: nil, message: nil, desc: nil
+        @pull_request_filter = pull_request_filter || PullRequestFilter.new
+        @diff_expectations = diff_expectations || DiffExpectationSet.new
+        @message = Array message
+        @desc = desc || "(no description provided)"
         yield self if block_given?
       end
 
       def clone
-        copy = Preset.new
-        copy.pull_request_filter = @pull_request_filter.clone
-        copy.diff_expectations = @diff_expectations.clone
-        copy.message = @message.dup
-        copy.desc = @desc.dup
-        copy
+        Preset.new \
+          pull_request_filter: @pull_request_filter.clone,
+          diff_expectations: @diff_expectations.clone,
+          message: @message.dup,
+          desc: @desc.dup
       end
 
-      attr_accessor :pull_request_filter
-      attr_accessor :diff_expectations
-      attr_accessor :message
+      attr_reader :pull_request_filter
+      attr_reader :diff_expectations
+      attr_reader :message
       attr_accessor :desc
     end
 
     class PullRequestFilter
       def initialize
-        clear_only_titles!
-        clear_omit_titles!
-        clear_only_users!
-        clear_omit_users!
-        clear_only_labels!
-        clear_omit_labels!
-        clear_only_ids!
-        clear_omit_ids!
-        omit_labels "do not merge"
+        reset_to_default!
         yield self if block_given?
       end
 
@@ -459,6 +453,22 @@ module Yoshi
       def clear_omit_ids!
         @omit_ids = []
         self
+      end
+
+      def clear_all!
+        clear_only_titles!
+        clear_omit_titles!
+        clear_only_users!
+        clear_omit_users!
+        clear_only_labels!
+        clear_omit_labels!
+        clear_only_ids!
+        clear_omit_ids!
+      end
+
+      def reset_to_default!
+        clear_all!
+        omit_labels "do not merge"
       end
 
       def clone
@@ -1009,8 +1019,15 @@ module Yoshi
               "* `:pr_title` - use the pull request title",
               "* `:pr_title_number` - use the pull request title and number"
           end
-          flag :edit_message,
-               desc: "edit the commit message in an editor for each merge"
+          flag :edit_message, "--[no-]edit-message" do
+            desc "edit the commit message in an editor for each merge"
+            long_desc \
+              "Edit the commit message in an editor for each merge. ",
+              "Defaults to false if --automerge is set, or if --message is " \
+                "specified completely without using the pull request title; " \
+                "otherwise defaults to true. You cannot set --edit-message " \
+                "explicitly along with --automerge."
+          end
           flag :editor, accept: String,
                desc: "path to the editor program to use for editing commit message details"
         end
