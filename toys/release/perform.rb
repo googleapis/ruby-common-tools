@@ -43,6 +43,7 @@ include :gems
 def run
   Dir.chdir context_directory
   Dir.chdir base_dir if base_dir
+  log_identity
   load_deps
   load_env
   start_report
@@ -65,7 +66,10 @@ def load_deps
 end
 
 def load_env
-  raise "Did not find KOKORO_GFILE_DIR" unless ENV["KOKORO_GFILE_DIR"]
+  unless ENV["KOKORO_GFILE_DIR"]
+    logger.warn "Did not find KOKORO_GFILE_DIR. Skipping load of kokoro-hosted secrets."
+    return
+  end
   secret_manager_dir = File.join ENV["KOKORO_GFILE_DIR"], "secret_manager"
   keystore_dir = ENV["KOKORO_KEYSTORE_DIR"]
   logger.warn "Did not find KOKORO_KEYSTORE_DIR" unless keystore_dir
@@ -106,6 +110,26 @@ def load_param param_name, dir, file_name, from: :content
     logger.info "Read #{param_name} from environment #{file_name}"
   else
     logger.warn "#{param_name} not available from environment #{file_name}"
+  end
+end
+
+def log_identity
+  if ENV["RUBY_COMMON_TOOLS"]
+    logger.info "Loaded release scripts from local file system"
+  else
+    logger.info "Loaded release scripts from toys git-cache"
+  end
+  repo_dir = File.dirname __dir__, 2
+  if File.directory? "#{repo_dir}/.git"
+    commit = capture ["git", "rev-parse", "HEAD"], chdir: repo_dir
+    logger.info "Git clone commit for release scripts: #{commit.strip}"
+  else
+    commit = File.basename repo_dir
+    if commit =~ /^[0-9a-f]{40}$/
+      logger.info "Toys git-cache commit for release scripts: #{commit}"
+    else
+      logger.warn "Unable to determine the commit for release scripts"
+    end
   end
 end
 
@@ -499,12 +523,13 @@ class Performer
 
   def run_aux_task task_name, remove: []
     Array(remove).each { |path| FileUtils.rm_rf path }
-    if File.file? "Rakefile"
+    result = @executor.exec ["toys", "system", "tools", "show", task_name], result_callback: nil, out: :null
+    if result.success?
+      @executor.exec ["toys", task_name]
+    else
       isolate_bundle do
         @executor.exec ["bundle", "exec", "rake", task_name]
       end
-    else
-      @executor.exec ["toys", task_name]
     end
   end
 
@@ -527,7 +552,7 @@ class Performer
           puts spec.version
         end
       end
-      value = @executor.capture_proc(func).strip
+      value = @executor.capture_proc(func, log_cmd: "exec proc: load #{gem_name}.gemspec").strip
       logger.info "Specification gem version = #{value}"
       Gem::Version.new value
     end
