@@ -119,5 +119,6 @@ def default_github_token
   return value unless value.empty?
   result = exec ["gh", "auth", "status", "-t"], out: :capture, err: :capture
   match = /Token: (\w+)/.match(result.captured_out + result.captured_err)
-  match ? match[1] : nil
+  return nil unless match
+  match[1]
 end
