@@ -50,7 +50,8 @@ def determine_skips gem_name
     "^https://rubygems\\.org/gems/#{wrapper_gem_name}",
     "^https://cloud\\.google\\.com/ruby/docs/reference/#{gem_name}/latest$",
     "^https://rubydoc\\.info/gems/#{gem_name}",
-    "^https?://stackoverflow\\.com/questions/tagged/google-cloud-platform\\+ruby$"
+    "^https?://stackoverflow\\.com/questions/tagged/google-cloud-platform\\+ruby$",
+    "^https://console\\.cloud\\.google\\.com/apis/library/\\\w+\\.googleapis\\.com$"
   ]
   if gem_name == wrapper_gem_name
     skip_regexes << "^https://cloud\\.google\\.com/ruby/docs/reference/#{gem_name}-v\\d\\w*/latest$"
