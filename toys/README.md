@@ -12,6 +12,7 @@ Specifically:
 * `/toys/release` provides the Ruby release system, including tools for
   controlling release-please, performing Rubygems releases, and building and
   publishing reference documentation.
+* `/toys/tombstone-library` is a tool that replaces a library with a tombstone.
 * `/toys/yoshi` provides a set of utility classes for performing common steps
   such as interacting with GitHub and opening pull requests.
 
