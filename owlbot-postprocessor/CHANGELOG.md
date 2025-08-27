@@ -1,5 +1,12 @@
 # Changelog
 
+### 0.10.0 (2025-08-26)
+
+#### Features
+
+* update ruby version to 3.4.5 ([#398](https://github.com/googleapis/ruby-common-tools/issues/398)) 
+* Updated required Ruby version to 3.1 ([#387](https://github.com/googleapis/ruby-common-tools/issues/387)) 
+
 ### 0.9.14 (2025-02-13)
 
 #### Bug Fixes
