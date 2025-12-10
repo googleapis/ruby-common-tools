@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "yaml"
+
 desc "Build cloud-rad yardoc"
 
 flag :bundle
@@ -37,6 +39,10 @@ def run
   unless bundle
     gem "yard", "~> 0.9", ">= 0.9.26"
     gem "redcarpet", "~> 3.5", ">= 3.5.1"
+  end
+
+  if gem_name == "help"
+    return build_help
   end
   yardopts_content = File.read yardopts
   cmd = ["yard", "doc", "--no-yardopts"] + build_options(yardopts_content)
@@ -73,8 +79,38 @@ def build_options yardopts_content
   final_options
 end
 
+def build_help
+  mkdir "doc"
+  custom_names = {
+    "index.md" => "Getting started",
+    "occ_for_iam.md" => "OCC for IAM"
+  }
+  guides = {
+    "./../README.md" => "index.md"
+  }
+  Dir.glob("*.md").each do |file|
+    guides[file] = File.basename(file).downcase
+  end
+  toc_items = []
+  guides.each do |path, filename|
+    cp path, "doc/" + filename
+    toc_items << {
+      "name" => custom_names[filename] || File.basename(filename, ".*").tr("_-", " ").capitalize,
+      "href" => filename
+    }
+  end
+  toc_data = [
+    {
+      "uid" => "product-neutral-guides",
+      "name" => "Client library help",
+      "items" => toc_items
+    }
+  ]
+  File.write "doc/toc.yaml", YAML.dump(toc_data)
+  sanity_check
+end
+
 def sanity_check
-  require "yaml"
   Dir.glob "doc/*.yml" do |path|
     YAML.load_file path
   end
