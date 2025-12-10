@@ -93,7 +93,7 @@ def build_help
   end
   toc_items = []
   guides.each do |path, filename|
-    cp path, "doc/" + filename
+    cp path, "doc/#{filename}"
     toc_items << {
       "name" => custom_names[filename] || File.basename(filename, ".*").tr("_-", " ").capitalize,
       "href" => filename
