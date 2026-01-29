@@ -43,7 +43,7 @@ describe "gas kokoro-trigger" do
       "x86_64-linux"
     ]
   end
-  let(:ruby_versions) { ["2.7", "3.0", "3.1", "3.2"] }
+  let(:ruby_versions) { ["3.1", "3.2", "3.3", "3.4", "4.0"] }
   let(:gem_and_version) { "google-protobuf-3.25.2" }
   let(:protobuf_env) do
     {
@@ -61,7 +61,6 @@ describe "gas kokoro-trigger" do
   let(:excluded_versions) do
     {
       "x64-mingw32" => ["3.1", "3.2", "3.3", "3.4"],
-      "x64-mingw-ucrt" => ["2.7", "3.0"]
     }
   end
   let(:fake_gems) { ["fake-gem-1.0.gem", "fake-gem-2.0.gem"] }
