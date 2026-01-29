@@ -33,6 +33,14 @@ jobs:
             ruby: "3.4"
             build: false
             jobs: "--only --rubocop"
+          - os: ubuntu-latest
+            ruby: "4.0"
+            build: true
+            jobs: "--only --test"
+          - os: ubuntu-latest
+            ruby: "4.0"
+            build: false
+            jobs: "--only --rubocop"
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
