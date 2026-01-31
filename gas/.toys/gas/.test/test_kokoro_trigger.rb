@@ -36,7 +36,6 @@ describe "gas kokoro-trigger" do
     [
       "arm64-darwin",
       "x64-mingw-ucrt",
-      "x64-mingw32",
       "x86-linux",
       "x86-mingw32",
       "x86_64-darwin",
@@ -56,11 +55,6 @@ describe "gas kokoro-trigger" do
       "GAS_RUBYGEMS_KEY_FILE" => "keyfile.txt",
       "GAS_WORKSPACE_DIR" => workspace_dir,
       "GAS_ARTIFACTS_DIR" => artifacts_dir
-    }
-  end
-  let(:excluded_versions) do
-    {
-      "x64-mingw32" => ["3.1", "3.2", "3.3", "3.4"],
     }
   end
   let(:fake_gems) { ["fake-gem-1.0.gem", "fake-gem-2.0.gem"] }
@@ -118,7 +112,7 @@ describe "gas kokoro-trigger" do
     assert_equal "0123456789abcdef", Gems.key
 
     # Make sure we "published" the expected gems
-    assert_equal 10, found_content.size
+    assert_equal (gem_platforms.size + fake_gems.size + 1), found_content.size
     assert_includes found_content, "fake gem 1.0"
     assert_includes found_content, "fake gem 2.0"
 
@@ -129,8 +123,7 @@ describe "gas kokoro-trigger" do
         FileUtils.rm_r "#{gem_and_version}-#{platform}"
         exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform}.gem"], out: :null
         suffix = platform.include?("darwin") ? "bundle" : "so"
-        actual_ruby_versions = ruby_versions - excluded_versions.fetch(platform, [])
-        actual_ruby_versions.each do |ruby|
+        ruby_versions.each do |ruby|
           assert File.exist? "#{gem_and_version}-#{platform}/lib/google/#{ruby}/protobuf_c.#{suffix}"
         end
       end
