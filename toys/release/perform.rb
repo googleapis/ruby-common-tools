@@ -361,7 +361,7 @@ class Performer
     end
     transformation_info = transform_links
     begin
-      publish_gem dry_run: dry_run
+      publish_gem dry_run: dry_run unless @gem_name == "help"
       publish_docs dry_run: dry_run if enable_docs
       publish_rad dry_run: dry_run if enable_rad
     ensure
