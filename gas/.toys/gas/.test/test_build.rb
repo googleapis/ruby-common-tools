@@ -47,6 +47,9 @@ describe "gas build" do
   let(:windows_platforms) { ["x86-mingw32", "x64-mingw-ucrt"] }
   let(:all_platforms) { linux_platforms_without_variants + linux_platforms_with_variants + darwin_platforms + windows_platforms }
   let(:exec_service) { Toys::Utils::Exec.new }
+  # See https://github.com/rake-compiler/rake-compiler-dock/issues/189 for details about the issue with
+  # this platform and Ruby version combination:
+  let(:excluded_combinations) { [["x86-mingw32", "4.0"]] }
   let(:windows_ruby_versions) { ["3.1", "4.0"] }
   let(:host_platform) { "#{`uname -m`.strip}-#{`uname -s`.strip.downcase}" }
   let(:host_ruby_version) { RUBY_VERSION.sub(/^(\d+\.\d+).*$/, "\\1") }
@@ -87,11 +90,11 @@ describe "gas build" do
     @gem_version_override = gem_version_for_multi_rubies
     quiet_build platform_for_multi_rubies, multi_rubies
     Dir.chdir "#{workspace_dir}/#{gem_and_version}/pkg/" do
-      assert File.exist? "#{gem_and_version}-#{platform_for_multi_rubies}.gem"
+      assert_path_exists "#{gem_and_version}-#{platform_for_multi_rubies}.gem"
       FileUtils.rm_r "#{gem_and_version}-#{platform_for_multi_rubies}"
       exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform_for_multi_rubies}.gem"], out: :null
       multi_rubies.each do |ruby|
-        assert File.exist? "#{gem_and_version}-#{platform_for_multi_rubies}/lib/google/#{ruby}/protobuf_c.so"
+        assert_path_exists "#{gem_and_version}-#{platform_for_multi_rubies}/lib/google/#{ruby}/protobuf_c.so"
       end
     end
   end
@@ -100,10 +103,10 @@ describe "gas build" do
     quiet_build linux_platforms_without_variants, host_ruby_version
     Dir.chdir "#{workspace_dir}/#{gem_and_version}/pkg/" do
     linux_platforms_without_variants.each do |platform|
-        assert File.exist? "#{gem_and_version}-#{platform}.gem"
+        assert_path_exists "#{gem_and_version}-#{platform}.gem"
         FileUtils.rm_r "#{gem_and_version}-#{platform}"
         exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform}.gem"], out: :null
-        assert File.exist? "#{gem_and_version}-#{platform}/lib/google/protobuf_c.so"
+        assert_path_exists "#{gem_and_version}-#{platform}/lib/google/protobuf_c.so"
       end
     end
   end
@@ -112,10 +115,10 @@ describe "gas build" do
     quiet_build linux_platforms_with_variants, host_ruby_version
     Dir.chdir "#{workspace_dir}/#{gem_and_version}/pkg/" do
     linux_platforms_with_variants.each do |platform|
-        assert File.exist? "#{gem_and_version}-#{platform}.gem"
+        assert_path_exists "#{gem_and_version}-#{platform}.gem"
         FileUtils.rm_r "#{gem_and_version}-#{platform}"
         exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform}.gem"], out: :null
-        assert File.exist? "#{gem_and_version}-#{platform}/lib/google/protobuf_c.so"
+        assert_path_exists "#{gem_and_version}-#{platform}/lib/google/protobuf_c.so"
       end
     end
   end
@@ -124,10 +127,10 @@ describe "gas build" do
     quiet_build darwin_platforms, host_ruby_version
     Dir.chdir "#{workspace_dir}/#{gem_and_version}/pkg/" do
       darwin_platforms.each do |platform|
-        assert File.exist? "#{gem_and_version}-#{platform}.gem"
+        assert_path_exists "#{gem_and_version}-#{platform}.gem"
         FileUtils.rm_r "#{gem_and_version}-#{platform}"
         exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform}.gem"], out: :null
-        assert File.exist? "#{gem_and_version}-#{platform}/lib/google/protobuf_c.bundle"
+        assert_path_exists "#{gem_and_version}-#{platform}/lib/google/protobuf_c.bundle"
       end
     end
   end
@@ -136,11 +139,12 @@ describe "gas build" do
     quiet_build windows_platforms, windows_ruby_versions
     Dir.chdir "#{workspace_dir}/#{gem_and_version}/pkg/" do
       windows_platforms.each do |platform|
-        assert File.exist? "#{gem_and_version}-#{platform}.gem"
+        assert_path_exists "#{gem_and_version}-#{platform}.gem"
         FileUtils.rm_r "#{gem_and_version}-#{platform}"
         exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform}.gem"], out: :null
         windows_ruby_versions.each do |ruby|
-          assert File.exist? "#{gem_and_version}-#{platform}/lib/google/#{ruby}/protobuf_c.so"
+          next if excluded_combinations.include? [platform, ruby]
+          assert_path_exists "#{gem_and_version}-#{platform}/lib/google/#{ruby}/protobuf_c.so"
         end
       end
     end
