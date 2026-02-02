@@ -57,6 +57,11 @@ describe "gas kokoro-trigger" do
       "GAS_ARTIFACTS_DIR" => artifacts_dir
     }
   end
+  let(:excluded_versions) do
+    {
+      "x86-mingw32" => ["4.0"],
+    }
+  end
   let(:fake_gems) { ["fake-gem-1.0.gem", "fake-gem-2.0.gem"] }
 
   def temp_set_env hash
@@ -119,12 +124,13 @@ describe "gas kokoro-trigger" do
     # Make sure we built the expected gems
     Dir.chdir "#{workspace_dir}/#{gem_and_version}/pkg/" do
       gem_platforms.each do |platform|
-        assert File.exist? "#{gem_and_version}-#{platform}.gem"
+        assert_path_exists "#{gem_and_version}-#{platform}.gem"
         FileUtils.rm_r "#{gem_and_version}-#{platform}"
         exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform}.gem"], out: :null
         suffix = platform.include?("darwin") ? "bundle" : "so"
-        ruby_versions.each do |ruby|
-          assert File.exist? "#{gem_and_version}-#{platform}/lib/google/#{ruby}/protobuf_c.#{suffix}"
+        actual_ruby_versions = ruby_versions - excluded_versions.fetch(platform, [])
+        actual_ruby_versions.each do |ruby|
+          assert_path_exists "#{gem_and_version}-#{platform}/lib/google/#{ruby}/protobuf_c.#{suffix}"
         end
       end
     end
@@ -132,7 +138,7 @@ describe "gas kokoro-trigger" do
     # Make sure we copied gems into the artifacts directory
     gem_platforms.each do |platform|
       artifact_name = "#{gem_and_version}-#{platform}.gem"
-      assert File.exist? "#{artifacts_dir}/#{artifact_name}"
+      assert_path_exists "#{artifacts_dir}/#{artifact_name}"
       artifact_content = File.read "#{artifacts_dir}/#{artifact_name}"
       original_content = File.read "#{workspace_dir}/#{gem_and_version}/pkg/#{artifact_name}"
       assert_equal original_content, artifact_content
