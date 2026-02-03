@@ -16,4 +16,4 @@
 
 expand :clean, paths: ["workspace"]
 
-tool "test", delegate_to: ["system", "test", "--minitest_mock"]
+tool "test", delegate_to: ["system", "test", "--minitest-mock"]
