@@ -36,14 +36,13 @@ describe "gas kokoro-trigger" do
     [
       "arm64-darwin",
       "x64-mingw-ucrt",
-      "x64-mingw32",
       "x86-linux",
       "x86-mingw32",
       "x86_64-darwin",
       "x86_64-linux"
     ]
   end
-  let(:ruby_versions) { ["2.7", "3.0", "3.1", "3.2"] }
+  let(:ruby_versions) { ["3.1", "3.2", "3.3", "3.4", "4.0"] }
   let(:gem_and_version) { "google-protobuf-3.25.2" }
   let(:protobuf_env) do
     {
@@ -60,8 +59,7 @@ describe "gas kokoro-trigger" do
   end
   let(:excluded_versions) do
     {
-      "x64-mingw32" => ["3.1", "3.2", "3.3", "3.4"],
-      "x64-mingw-ucrt" => ["2.7", "3.0"]
+      "x86-mingw32" => ["4.0"],
     }
   end
   let(:fake_gems) { ["fake-gem-1.0.gem", "fake-gem-2.0.gem"] }
@@ -119,20 +117,20 @@ describe "gas kokoro-trigger" do
     assert_equal "0123456789abcdef", Gems.key
 
     # Make sure we "published" the expected gems
-    assert_equal 10, found_content.size
+    assert_equal (gem_platforms.size + fake_gems.size + 1), found_content.size
     assert_includes found_content, "fake gem 1.0"
     assert_includes found_content, "fake gem 2.0"
 
     # Make sure we built the expected gems
     Dir.chdir "#{workspace_dir}/#{gem_and_version}/pkg/" do
       gem_platforms.each do |platform|
-        assert File.exist? "#{gem_and_version}-#{platform}.gem"
+        assert_path_exists "#{gem_and_version}-#{platform}.gem"
         FileUtils.rm_r "#{gem_and_version}-#{platform}"
         exec_service.exec ["gem", "unpack", "#{gem_and_version}-#{platform}.gem"], out: :null
         suffix = platform.include?("darwin") ? "bundle" : "so"
         actual_ruby_versions = ruby_versions - excluded_versions.fetch(platform, [])
         actual_ruby_versions.each do |ruby|
-          assert File.exist? "#{gem_and_version}-#{platform}/lib/google/#{ruby}/protobuf_c.#{suffix}"
+          assert_path_exists "#{gem_and_version}-#{platform}/lib/google/#{ruby}/protobuf_c.#{suffix}"
         end
       end
     end
@@ -140,7 +138,7 @@ describe "gas kokoro-trigger" do
     # Make sure we copied gems into the artifacts directory
     gem_platforms.each do |platform|
       artifact_name = "#{gem_and_version}-#{platform}.gem"
-      assert File.exist? "#{artifacts_dir}/#{artifact_name}"
+      assert_path_exists "#{artifacts_dir}/#{artifact_name}"
       artifact_content = File.read "#{artifacts_dir}/#{artifact_name}"
       original_content = File.read "#{workspace_dir}/#{gem_and_version}/pkg/#{artifact_name}"
       assert_equal original_content, artifact_content
