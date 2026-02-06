@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ruby:3.4.5-bookworm
+FROM ruby:3.4.8-bookworm
 RUN apt-get update \
     && apt-get -y upgrade \
     && apt-get -y autoremove \
