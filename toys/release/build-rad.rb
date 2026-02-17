@@ -15,6 +15,8 @@
 # limitations under the License.
 
 require "yaml"
+require "rubygems"
+require "json"
 
 desc "Build cloud-rad yardoc"
 
@@ -107,6 +109,14 @@ def build_help
     }
   ]
   File.write "doc/toc.yaml", YAML.dump(toc_data)
+  gemspec = Gem::Specification.load "help.gemspec"
+  version = gemspec.version.to_s
+  metadata = {
+    "language" => "ruby",
+    "name" => "product-neutral-guides",
+    "version" => version
+  }
+  File.write "doc/docs.metadata.json", JSON.pretty_generate(metadata)
   sanity_check
 end
 
