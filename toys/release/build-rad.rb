@@ -83,6 +83,12 @@ end
 
 def build_help
   mkdir "doc"
+  write_toc
+  write_metadata
+  sanity_check
+end
+
+def write_toc
   custom_names = {
     "index.md" => "Getting started",
     "occ_for_iam.md" => "OCC for IAM"
@@ -109,6 +115,9 @@ def build_help
     }
   ]
   File.write "doc/toc.yaml", YAML.dump(toc_data)
+end
+
+def write_metadata
   gemspec = Gem::Specification.load "help.gemspec"
   version = gemspec.version.to_s
   metadata = {
@@ -117,7 +126,6 @@ def build_help
     "version" => version
   }
   File.write "doc/docs.metadata.json", JSON.pretty_generate(metadata)
-  sanity_check
 end
 
 def sanity_check
