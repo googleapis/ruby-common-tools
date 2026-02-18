@@ -37,5 +37,8 @@ jobs:
           toys release manifest -v \
             --fork --skip-labeling \
             --github-event-name=${{ github.event_name }} \
-            ${{ github.event.inputs.args }} \
-            owlbot-postprocessor:${{ github.event.inputs.version }}
+            ${GITHUB_EVENT_INPUTS_ARGS} \
+            owlbot-postprocessor:${GITHUB_EVENT_INPUTS_VERSION}
+        env:
+          GITHUB_EVENT_INPUTS_ARGS: ${{ github.event.inputs.args }}
+          GITHUB_EVENT_INPUTS_VERSION: ${{ github.event.inputs.version }}
