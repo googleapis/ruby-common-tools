@@ -140,7 +140,7 @@ module Yoshi
     def gh_ensure_fork remote: nil
       git_verify_binary
       gh_verify_binary
-      @context.exec ["gh", "repo", "fork", gh_repo_full_name, "--remote=false", "--clone=false"], e: true
+      @context.exec ["gh", "repo", "fork", gh_repo_full_name, "--clone=false"], e: true
       @context.exec ["gh", "repo", "sync", gh_fork_full_name], e: true
       if remote && gh_cur_token
         unless context.exec(["git", "remote", "get-url", remote], e: false, out: :null, err: :null).success?
