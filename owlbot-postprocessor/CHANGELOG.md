@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.10.1 (2026-04-14)
+
+#### Bug Fixes
+
+* Remove incompatible gh remote flag ([#419](https://github.com/googleapis/ruby-common-tools/issues/419)) 
+
 ### 0.10.0 (2025-08-26)
 
 #### Features
