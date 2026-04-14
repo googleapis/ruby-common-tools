@@ -720,7 +720,7 @@ describe OwlBot do
     it "runs toys" do
       create_gem_file "Gemfile", <<~RUBY
         source "https://rubygems.org"
-        gem "minitest", "~> 5.14"
+        gem "minitest", "~> 6.0.2"
       RUBY
       create_gem_file ".toys.rb", <<~RUBY
         tool "foo" do

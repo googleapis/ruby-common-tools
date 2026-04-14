@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-toys_version! "~> 0.15"
+toys_version! "~> 0.21"
 
 desc "Run CI checks"
 
@@ -89,7 +89,7 @@ def run_test
           next
         end
       end
-      result = exec_separate_tool ["test", "--minitest-mock"], name: "Tests in #{dir}"
+      result = exec_separate_tool ["test"], name: "Tests in #{dir}"
       if result.success?
         puts "PASSED: #{name}", :bold, :green
       else
