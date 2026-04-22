@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.11.0 (2026-04-22)
+
+#### Features
+
+* update Ruby version to 4.0.3 ([#421](https://github.com/googleapis/ruby-common-tools/issues/421)) 
+
 ### 0.10.1 (2026-04-14)
 
 #### Bug Fixes
