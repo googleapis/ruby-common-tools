@@ -28,6 +28,25 @@ end
 
 tool "yard", delegate_to: "yardoc"
 
+tool "doctest" do
+  desc "Run yard-doctest example tests."
+
+  include :exec, e: true
+
+  def run
+    unless File.exist? "support/doctest_helper.rb"
+      puts "No doctest helper present, skipping doctests."
+      exit 0
+    end
+    Dir.chdir context_directory
+    Bundler.with_clean_env do
+      exec ["bundle", "exec", "yard", "config", "load_plugins", "true"]
+      exec ["bundle", "exec", "yard", "doctest"]
+    end
+  end
+end
+
+
 expand :gem_build
 
 expand :gem_build, name: "install", install_gem: true

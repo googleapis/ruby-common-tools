@@ -19,6 +19,7 @@ CI_TASKS = {
   "rubocop" => [],
   "build" => [],
   "yard" => [],
+  "doctest" => [],
   "linkinator" => [],
   "acceptance" => [:project, :keyfile],
   "samples-main" => [:project, :keyfile, :samples_bundle_update],
