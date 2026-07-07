@@ -50,10 +50,10 @@ describe "gas build" do
   # See https://github.com/rake-compiler/rake-compiler-dock/issues/189 for details about the issue with
   # this platform and Ruby version combination:
   let(:excluded_combinations) { [["x86-mingw32", "4.0"]] }
-  let(:windows_ruby_versions) { ["3.1", "4.0"] }
+  let(:windows_ruby_versions) { ["3.2", "4.0"] }
   let(:host_platform) { "#{`uname -m`.strip}-#{`uname -s`.strip.downcase}" }
   let(:host_ruby_version) { RUBY_VERSION.sub(/^(\d+\.\d+).*$/, "\\1") }
-  let(:multi_rubies) { ["3.1", "3.2", "3.3", "3.4", "4.0" ]}
+  let(:multi_rubies) { ["3.2", "3.3", "3.4", "4.0" ]}
   let(:gem_version_for_multi_rubies) { "4.29.2" }
   let(:platform_for_multi_rubies) { "x86_64-linux-gnu" }
 

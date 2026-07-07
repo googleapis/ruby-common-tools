@@ -37,7 +37,7 @@ module Gas
   ##
   # Ruby versions to build if no versions are specified on the command line
   #
-  DEFAULT_RUBIES = ["3.1", "3.2", "3.3", "3.4", "4.0"]
+  DEFAULT_RUBIES = ["3.2", "3.3", "3.4", "4.0"]
 
   ##
   # Version of the Gems gem to install
