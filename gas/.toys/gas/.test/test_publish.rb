@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "minitest/mock"
 require "toys/utils/gems"
 require_relative "../.preload"
 
