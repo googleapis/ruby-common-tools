@@ -38,6 +38,27 @@ expand :minitest do |t|
   t.files = "test/**/*_test.rb"
 end
 
+require_relative "minitest_junit_helper"
+
+# Reopen the standard minitest "test" task to hook bundle setup and cleanup.
+# This configures BUNDLE_GEMFILE to expose the minitest-reporters dependency in CI.
+tool "test" do
+  include MinitestJunitHelper
+
+  alias_method :original_bundler_setup, :bundler_setup
+  alias_method :original_run, :run
+
+  def bundler_setup gemfile_path: nil
+    original_bundler_setup gemfile_path: setup_minitest_junit_wrapper(gemfile_path: gemfile_path)
+  end
+
+  def run
+    original_run
+  ensure
+    cleanup_minitest_junit_wrapper
+  end
+end
+
 tool "bundle" do
   flag :update, desc: "Update rather than install the bundle"
 
