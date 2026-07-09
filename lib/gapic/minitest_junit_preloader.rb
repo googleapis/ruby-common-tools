@@ -46,7 +46,8 @@ if ENV["CI"] || ENV["KOKORO_JOB_NAME"]
             end
 
             has_junit = reporters.any? do |r|
-              r.class.name.include?("SpongeReporter") || r.class.name.include?("JUnitReporter")
+              name = r.class.name
+              name && (name.include?("SpongeReporter") || name.include?("JUnitReporter"))
             end
 
             unless has_junit
