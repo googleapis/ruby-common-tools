@@ -16,6 +16,13 @@
 
 toys_version! ">= 0.15.3"
 
+# Prepend the ruby-common-tools/lib directory to the RUBYLIB search path.
+# This ensures that test suites or subprocesses spawned by Toys tasks (such as
+# test runs or conformance tests) can load "gapic/minitest_junit_preloader"
+# without requiring client gems to declare ruby-common-tools in their Gemfiles.
+lib_path = File.expand_path("../../lib", __dir__)
+ENV["RUBYLIB"] = [lib_path, ENV["RUBYLIB"]].compact.join(File::PATH_SEPARATOR)
+
 expand :clean, paths: :gitignore
 
 expand :rubocop, bundler: true
@@ -36,27 +43,6 @@ expand :minitest do |t|
   t.libs = ["lib", "test"]
   t.use_bundler
   t.files = "test/**/*_test.rb"
-end
-
-require_relative "minitest_junit_helper"
-
-# Reopen the standard minitest "test" task to hook bundle setup and cleanup.
-# This configures BUNDLE_GEMFILE to expose the minitest-reporters dependency in CI.
-tool "test" do
-  include MinitestJunitHelper
-
-  alias_method :original_bundler_setup, :bundler_setup
-  alias_method :original_run, :run
-
-  def bundler_setup gemfile_path: nil
-    original_bundler_setup gemfile_path: setup_minitest_junit_wrapper(gemfile_path: gemfile_path)
-  end
-
-  def run
-    original_run
-  ensure
-    cleanup_minitest_junit_wrapper
-  end
 end
 
 tool "bundle" do
