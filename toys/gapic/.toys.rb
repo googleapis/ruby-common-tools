@@ -16,11 +16,11 @@
 
 toys_version! ">= 0.15.3"
 
-# Prepend the ruby-common-tools/lib directory to the RUBYLIB search path.
+# Prepend the nested lib directory to the RUBYLIB search path.
 # This ensures that test suites or subprocesses spawned by Toys tasks (such as
 # test runs or conformance tests) can load "gapic/minitest_junit_preloader"
 # without requiring client gems to declare ruby-common-tools in their Gemfiles.
-lib_path = File.expand_path "../../lib", __dir__
+lib_path = File.expand_path "lib", __dir__
 ENV["RUBYLIB"] = [lib_path, ENV["RUBYLIB"]].compact.join File::PATH_SEPARATOR
 
 expand :clean, paths: :gitignore
