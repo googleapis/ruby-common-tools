@@ -18,6 +18,12 @@ expand :clean, paths: :gitignore
 
 expand :rubocop, bundler: true
 
+expand :minitest do |t|
+  t.libs = ["toys/gapic/lib"]
+  t.files = "toys/gapic/test/**/*_test.rb"
+  t.use_bundler
+end
+
 tool "release" do
   load ::File.join(::File.dirname(__dir__), "toys", "release")
 end

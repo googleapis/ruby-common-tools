@@ -51,8 +51,7 @@ if ENV["CI"] || ENV["KOKORO_JOB_NAME"]
             end
 
             unless has_junit
-              FileUtils.mkdir_p "tmp/reports"
-              reporters << SpongeReporter.new("tmp/reports", false, { single_file: true })
+              reporters << SpongeReporter.new(".", false, { single_file: true })
             end
 
             original_use! reporters
