@@ -59,7 +59,7 @@ class MinitestJunitPreloaderTest < Minitest::Test
   end
 
   def run_subprocess dir
-    lib_dir = File.expand_path "../lib", __dir__
+    lib_dir = File.expand_path "../toys/gapic/lib", __dir__
     test_file = File.join dir, "dummy_test.rb"
     cmd = [
       "bundle", "exec", "ruby",
