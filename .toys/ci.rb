@@ -78,6 +78,17 @@ def run_rubocop
 end
 
 def run_test
+  if File.directory? "toys/gapic/test"
+    puts "RUNNING: root tests", :bold, :cyan
+    result = exec_separate_tool ["test"], name: "Root tests"
+    if result.success?
+      puts "PASSED: root tests", :bold, :green
+    else
+      puts "FAILED: root tests", :bold, :red
+      @errors << "root"
+    end
+  end
+
   determine_dirs.each do |dir|
     name = "#{dir}: test"
     Dir.chdir dir do
