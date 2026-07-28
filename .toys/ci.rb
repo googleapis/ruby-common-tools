@@ -78,7 +78,7 @@ def run_rubocop
 end
 
 def run_test
-  if File.directory? "toys/gapic/test"
+  if File.directory? "test"
     puts "RUNNING: root tests", :bold, :cyan
     result = exec_separate_tool ["test"], name: "Root tests"
     if result.success?

@@ -20,7 +20,7 @@ expand :rubocop, bundler: true
 
 expand :minitest do |t|
   t.libs = ["toys/gapic/lib"]
-  t.files = "toys/gapic/test/**/*_test.rb"
+  t.files = "test/**/*_test.rb"
   t.use_bundler
 end
 
