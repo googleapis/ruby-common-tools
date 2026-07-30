@@ -39,6 +39,10 @@ class MinitestJunitPreloaderTest < Minitest::Test
       xml_content = File.read xml_file
       assert_includes xml_content, "<testsuite name=\"DummyTest\""
       assert_includes xml_content, "<testcase name=\"test_success\""
+
+      # Verify time duration format (must be decimal with 6 decimal places, no scientific notation)
+      assert_match(/time="\d+\.\d{6}"/, xml_content, "Expected duration formatted as 6-digit decimal")
+      refute_match(/time="[^"]*e-[^"]*"/, xml_content, "Expected duration not to use scientific notation")
     end
   end
 
