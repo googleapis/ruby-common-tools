@@ -224,21 +224,6 @@ describe OwlBot do
     assert_equal ["CHANGELOG.md", "lib/bar/hello.rb", "lib/my/gem/version.rb"], manifest["static"]
   end
 
-  it "preserves copyright year of Ruby files" do
-    create_gem_file "lib/hello.rb", "# Copyright 2020 Google LLC\nputs 'hello'"
-    create_gem_file "lib/hello.py", "# Copyright 2020 Google LLC\nprint 'hello'"
-    create_staging_file "lib/hello.rb", "# Copyright 2021 Google LLC\nputs 'hello again'"
-    create_staging_file "lib/hello.py", "# Copyright 2021 Google LLC\nprint 'hello again'"
-
-    invoke_owlbot
-
-    assert_gem_file "lib/hello.rb", "# Copyright 2020 Google LLC\nputs 'hello again'"
-    assert_gem_file "lib/hello.py", "# Copyright 2021 Google LLC\nprint 'hello again'"
-
-    assert_equal ["lib/hello.py", "lib/hello.rb"], manifest["generated"]
-    assert_equal [], manifest["static"]
-  end
-
   it "preserves release_level field" do
     orig_content = <<~CONTENT
       {

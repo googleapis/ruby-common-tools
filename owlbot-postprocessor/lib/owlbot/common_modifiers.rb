@@ -21,29 +21,6 @@ module OwlBot
   #
   module CommonModifiers
     ##
-    # A convenience method that installs a modifier preserving copyright years
-    # in existing files.
-    #
-    # @param path [String,Regexp,Array<String,Regexp>] Optional path filter(s)
-    #     determining whether this modifier will run. Defaults to
-    #     `[/Rakefile$/, /\.rb$/, /\.gemspec$/, /Gemfile$/]`.
-    # @param name [String] Optional name for the modifier to add. Defaults to
-    #     `"preserve_existing_copyright_years"`.
-    #
-    def preserve_existing_copyright_years path: nil, name: nil
-      path ||= [/Rakefile$/, /\.rb$/, /\.gemspec$/, /Gemfile$/]
-      name ||= "preserve_existing_copyright_years"
-      modifier path: path, name: name do |src, dest|
-        if src && dest
-          regex = /^# Copyright (\d{4}) Google LLC$/
-          match = regex.match dest
-          src = src.sub regex, "# Copyright #{match[1]} Google LLC" if match
-        end
-        src
-      end
-    end
-
-    ##
     # A convenience method that installs a modifier preserving `release_level`
     # fields in existing `.repo-metadata.json` files.
     #
@@ -137,8 +114,6 @@ module OwlBot
     ##
     # Install the default modifiers. This includes:
     #
-    # * A modifier named `"preserve_existing_copyright_years"` which ensures
-    #   the copyright year of existing files is not modified.
     # * A modifier named `"preserve_repo_metadata_release_levels"` which
     #   ensures the `"release_level"` field of `.repo-metadata.json` files is
     #   not modified.
@@ -160,7 +135,6 @@ module OwlBot
     # remove the individual defaults if you want to disable or replace them.
     #
     def install_default_modifiers
-      preserve_existing_copyright_years
       preserve_repo_metadata_release_levels
       detect_repo_metadata_library_type
       preserve_snippet_metadata_release_versions
