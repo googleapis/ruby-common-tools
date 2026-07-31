@@ -1,0 +1,21 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    logger (1.7.0)
+    thrift (0.24.0)
+      logger
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  thrift
+
+CHECKSUMS
+  bundler (4.0.14) sha256=d09a0a965cf772266a7e49e83610be7c2f4e49e61134c42a56804bb383cc24b8
+  logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
+  thrift (0.24.0) sha256=4ccdcf2c7150de27547ce635725c8b1c85138ae5dea5667c7832abe1fec6c2c1
+
+BUNDLED WITH
+  4.0.14
