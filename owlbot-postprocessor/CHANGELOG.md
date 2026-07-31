@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.11.1 (2026-07-31)
+
+#### Bug Fixes
+
+* stop preserving copyright years by default ([#439](https://github.com/googleapis/ruby-common-tools/issues/439)) 
+
 ### 0.11.0 (2026-04-22)
 
 #### Features
