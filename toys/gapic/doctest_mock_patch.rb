@@ -14,17 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "minitest/mock"
-
-module Minitest
-  class Mock
-    def expect name, retval, args = [], **kwargs, &blk
-      if args.is_a?(Array) && args.last == Hash
-        args = args[0...-1]
+module Kernel
+  alias orig_require_for_doctest require
+  def require path
+    res = orig_require_for_doctest path
+    if path == "minitest/mock" && defined?(Minitest::Mock) && !Minitest::Mock.instance_methods(false).include?(:orig_expect_for_doctest)
+      Minitest::Mock.class_eval do
+        alias orig_expect_for_doctest expect
+        def expect name, retval, args = [], **kwargs, &blk
+          if args.is_a?(Array) && args.last == Hash
+            args = args[0...-1]
+          end
+          kwargs = Hash if kwargs.empty?
+          @expected_calls[name] << { retval: retval, args: args, kwargs: kwargs, block: blk }
+          self
+        end
       end
-      kwargs = Hash if kwargs.empty?
-      @expected_calls[name] << { retval: retval, args: args, kwargs: kwargs, block: blk }
-      self
     end
+    res
   end
 end
