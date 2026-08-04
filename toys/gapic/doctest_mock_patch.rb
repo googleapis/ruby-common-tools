@@ -22,13 +22,6 @@ module Kernel
     res
   end
 
-  alias orig_require_relative_for_doctest require_relative
-  def require_relative path
-    res = orig_require_relative_for_doctest path
-    Kernel.patch_minitest_mock_if_needed!
-    res
-  end
-
   class << self
     alias orig_singleton_require_for_doctest require
     def require path
