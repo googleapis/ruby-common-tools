@@ -36,9 +36,9 @@ flag :rubygems_api_token, "--rubygems-api-token=VALUE", default: ENV["RUBYGEMS_A
 flag :docs_staging_bucket, "--docs-staging-bucket=VALUE", default: ENV["STAGING_BUCKET"]
 flag :rad_staging_bucket, "--rad-staging-bucket=VALUE", default: ENV["V2_STAGING_BUCKET"]
 flag :docuploader_credentials, "--docuploader-credentials=VALUE", default: ENV["DOCUPLOADER_CREDENTIALS"]
+flag :docs_only
 
 include :exec, e: true
-include :gems
 
 def run
   Dir.chdir context_directory
@@ -55,8 +55,8 @@ ensure
 end
 
 def load_deps
-  gem "gems", "~> 1.3"
-  gem "jwt", "~> 2.10"
+  gem "gems", "~> 1.3" unless defined? Gems
+  gem "jwt", "~> 2.10" unless defined? JWT
   require "fileutils"
   require "gems"
   require "json"
@@ -236,8 +236,10 @@ def perform_release_gem name:, last_version:
                            docuploader_tries: 2
 
   releaser.run force_republish: force_republish,
+               enable_docs: enable_docs,
                enable_rad: enable_rad,
-               dry_run: dry_run
+               dry_run: dry_run,
+               docs_only: docs_only
 end
 
 def determine_packages
@@ -354,39 +356,39 @@ class Performer
   def run force_republish: false,
           enable_docs: false,
           enable_rad: false,
-          dry_run: false
-    if !force_republish && !needs_gem_publish?
+          dry_run: false,
+          docs_only: false
+    unless docs_only || force_republish || needs_gem_publish?
       logger.warn "**** Gem #{gem_name} is already up to date at version #{gem_version}. Skipping."
       return
     end
-    transformation_info = transform_links
+    transformation_info = {}
     begin
-      publish_gem dry_run: dry_run unless @gem_name == "help"
-      publish_docs dry_run: dry_run if enable_docs
-      publish_rad dry_run: dry_run if enable_rad
+      transform_links transformation_info
+      publish_gem dry_run: dry_run unless docs_only || @gem_name == "help"
+      publish_docs dry_run: dry_run if docs_only || enable_docs
+      publish_rad dry_run: dry_run if docs_only || enable_rad
     ensure
       detransform_links transformation_info
     end
   end
 
-  def transform_links
+  def transform_links transformation_info
     logger.info "**** Transforming links for #{gem_name}"
-    transformation_info = {}
     Dir.chdir gem_dir do
       Dir.glob "*.md" do |filename|
         content = File.read filename
         transformation_info[filename] = content
         transformed_content = content.gsub(/\[([^\]]*)\]\(([^):]*\.md)\)/, "{file:\\2 \\1}")
-        File.open(filename, "w") { |file| file << transformed_content }
+        File.write filename, transformed_content
       end
     end
-    transformation_info
   end
 
   def detransform_links transformation_info
     Dir.chdir gem_dir do
       transformation_info.each do |filename, content|
-        File.open(filename, "w") { |file| file << content }
+        File.write filename, content
       end
     end
   end
