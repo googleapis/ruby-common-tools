@@ -18,28 +18,33 @@ module Kernel
   alias orig_require_for_doctest require
   def require path
     res = orig_require_for_doctest path
-    if path == "minitest/mock" && defined?(Minitest::Mock) &&
-       !Minitest::Mock.instance_methods(false).include?(:orig_expect_for_doctest)
-      Minitest::Mock.class_eval do
-        alias orig_expect_for_doctest expect
-        def expect name, retval, args = [], **kwargs, &blk
-          args = args[0...-1] if args.is_a?(Array) && args.last == Hash
-          orig_expect_for_doctest name, retval, args, **kwargs, &blk
-        end
-
-        alias orig_method_missing_for_doctest method_missing
-        def method_missing sym, *args, **kwargs, &block
-          orig_method_missing_for_doctest sym, *args, **kwargs, &block
-        rescue ArgumentError => e
-          raise unless e.message.include? "keyword arguments"
-          orig_method_missing_for_doctest sym, *args, &block
-        end
-
-        def respond_to_missing? sym, include_private = false
-          super
-        end
-      end
-    end
+    patch_minitest_mock_if_needed!
     res
   end
+
+  def patch_minitest_mock_if_needed!
+    return unless defined?(Minitest::Mock)
+    return if Minitest::Mock.instance_methods(false).include? :orig_expect_for_doctest
+    Minitest::Mock.class_eval do
+      alias orig_expect_for_doctest expect
+      def expect name, retval, args = [], **kwargs, &blk
+        args = args[0...-1] if args.is_a?(Array) && args.last == Hash
+        orig_expect_for_doctest name, retval, args, **kwargs, &blk
+      end
+
+      alias orig_method_missing_for_doctest method_missing
+      def method_missing sym, *args, **kwargs, &block
+        orig_method_missing_for_doctest sym, *args, **kwargs, &block
+      rescue ArgumentError => e
+        raise unless e.message.include? "keyword arguments"
+        orig_method_missing_for_doctest sym, *args, &block
+      end
+
+      def respond_to_missing? sym, include_private = false
+        super
+      end
+    end
+  end
 end
+
+patch_minitest_mock_if_needed!
