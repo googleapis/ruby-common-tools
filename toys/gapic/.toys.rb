@@ -42,7 +42,7 @@ tool "doctest" do
     end
     Dir.chdir context_directory
     env_method = Bundler.respond_to?(:with_unbundled_env) ? :with_unbundled_env : :with_clean_env
-    Bundler.send(env_method) do
+    Bundler.send env_method do
       exec ["bundle", "exec", "yard", "config", "load_plugins", "true"]
       exec ["bundle", "exec", "yard", "doctest"]
     end
@@ -68,7 +68,7 @@ tool "bundle" do
   def run
     Dir.chdir context_directory
     env_method = Bundler.respond_to?(:with_unbundled_env) ? :with_unbundled_env : :with_clean_env
-    Bundler.send(env_method) do
+    Bundler.send env_method do
       exec ["bundle", update ? "update" : "install"]
     end
   end
