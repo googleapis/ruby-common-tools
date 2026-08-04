@@ -44,7 +44,7 @@ tool "doctest" do
     env_method = Bundler.respond_to?(:with_unbundled_env) ? :with_unbundled_env : :with_clean_env
     Bundler.send env_method do
       exec ["bundle", "exec", "yard", "config", "load_plugins", "true"]
-      exec ["bundle", "exec", "yard", "doctest"]
+      exec ["bundle", "exec", "yard", "doctest"], env: { "MT_KWARGS_HACK" => "1" }
     end
   end
 end
