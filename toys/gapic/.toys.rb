@@ -44,7 +44,9 @@ tool "doctest" do
     env_method = Bundler.respond_to?(:with_unbundled_env) ? :with_unbundled_env : :with_clean_env
     Bundler.send env_method do
       exec ["bundle", "exec", "yard", "config", "load_plugins", "true"]
-      exec ["bundle", "exec", "yard", "doctest"], env: { "MT_KWARGS_HACK" => "1" }
+      patch_path = File.expand_path "doctest_mock_patch.rb", __dir__
+      rubyopt = [ENV["RUBYOPT"], "-r#{patch_path}"].compact.join " "
+      exec ["bundle", "exec", "yard", "doctest"], env: { "MT_KWARGS_HACK" => "1", "RUBYOPT" => rubyopt }
     end
   end
 end
