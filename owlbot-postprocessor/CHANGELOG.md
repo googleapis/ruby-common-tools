@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.12.0 (2026-08-04)
+
+#### Features
+
+* update Ruby Docker version to 4.0.6 ([#443](https://github.com/googleapis/ruby-common-tools/issues/443)) 
+
 ### 0.11.1 (2026-07-31)
 
 #### Bug Fixes
