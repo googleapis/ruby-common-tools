@@ -153,7 +153,8 @@ if [[ -n "${KOKORO_BUILD_ID:-}" ]]; then
         if [[ ! "${TRAMPOLINE_HOST}" =~ "gcr.io" ]]; then
             # If you need to specificy a host other than gcr.io, you have to run on an update version of gcloud.
             echo "TRAMPOLINE_HOST: ${TRAMPOLINE_HOST}"
-            gcloud components update
+            gcloud components update || sudo apt-get update && \
+			  sudo apt-get install -y -q --only-upgrade google-cloud-cli google-cloud-cli-docker-credential-gcr
             gcloud auth configure-docker "${TRAMPOLINE_HOST}"
         else
             gcloud auth configure-docker --quiet
