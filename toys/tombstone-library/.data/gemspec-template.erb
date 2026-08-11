@@ -1,4 +1,4 @@
-require File.expand_path("<%= namespace_dir %>/version", __dir__)
+require File.expand_path("lib/<%= namespace_dir %>/version", __dir__)
 
 Gem::Specification.new do |gem|
   gem.name = "<%= gem_name %>"
@@ -21,7 +21,7 @@ Gem::Specification.new do |gem|
   gem.homepage = "https://github.com/googleapis/google-cloud-ruby"
   gem.license = "Apache-2.0"
   gem.platform = Gem::Platform::RUBY
-  gem.files = ["README.md", "LICENSE.md", ".yardopts", "<%= namespace_dir %>/version.rb"]
+  gem.files = ["README.md", "LICENSE.md", ".yardopts", "lib/<%= namespace_dir %>/version.rb"]
   gem.require_paths = ["lib"]
   gem.required_ruby_version = ">= 3.0"
 end
