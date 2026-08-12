@@ -74,13 +74,23 @@ end
 
 def ensure_gem_version
   unless gem_version
+    version_file = "#{gem_dir}/lib/#{namespace_dir}/version.rb"
+    if File.file? version_file
+      match = File.read(version_file).match(/VERSION = "([^"]+)"/)
+      set :gem_version, match[1] if match
+    end
+  end
+  unless gem_version
     require "json"
     content = capture ["curl", "https://rubygems.org/api/v1/gems/#{gem_name}.json"], err: :null
-    last_version = JSON.parse(content)["version"]
-    logger.info "Last released version for #{gem_name} was #{last_version}"
-    last_version = last_version.split(".").first.to_i
-    set :gem_version, "#{last_version + 1}.0.0"
+    begin
+      last_version = JSON.parse(content)["version"]
+      set :gem_version, last_version if last_version
+    rescue JSON::ParserError
+      nil
+    end
   end
+  set :gem_version, "0.0.1" unless gem_version
   logger.info "Tombstone will be #{gem_name} version #{gem_version}"
 end
 
