@@ -21,9 +21,6 @@ desc "Transform a gem into a tombstone after we think it's no longer useful"
 required_arg :gem_name do
   desc "Name of the gem to tombstone"
 end
-optional_arg :gem_version do
-  desc "Gem version to use for the tombstone"
-end
 flag :info_url, "--info-url=URL" do
   default ""
   desc "URL to use for more information"
@@ -68,20 +65,7 @@ def setup
   end
   set :gem_dir, gem_name if gem_dir.to_s.empty?
   set :info_url, DEFAULT_INFO_URL if info_url.to_s.empty?
-  ensure_gem_version
   require "erb"
-end
-
-def ensure_gem_version
-  unless gem_version
-    require "json"
-    content = capture ["curl", "https://rubygems.org/api/v1/gems/#{gem_name}.json"], err: :null
-    last_version = JSON.parse(content)["version"]
-    logger.info "Last released version for #{gem_name} was #{last_version}"
-    last_version = last_version.split(".").first.to_i
-    set :gem_version, "#{last_version + 1}.0.0"
-  end
-  logger.info "Tombstone will be #{gem_name} version #{gem_version}"
 end
 
 def delete_files
@@ -98,8 +82,6 @@ def generate_files
     generate_one "#{gem_name}.gemspec", "gemspec-template.erb"
     generate_one ".yardopts", "yardopts-template.erb"
     generate_one "Rakefile", "rakefile-template.erb"
-    mkdir_p "lib/#{namespace_dir}"
-    generate_one "lib/#{namespace_dir}/version.rb", "version-template.erb"
   end
 end
 
@@ -123,19 +105,4 @@ end
 
 def namespace_dir
   @namespace_dir ||= gem_name.tr "-", "/"
-end
-
-def version_lines
-  lines = []
-  indent = 0
-  namespace_modules.each do |mod|
-    lines << "#{' ' * indent}module #{mod}"
-    indent += 2
-  end
-  lines << "#{' ' * indent}VERSION = \"#{gem_version}\""
-  while indent.positive?
-    indent -= 2
-    lines << "#{' ' * indent}end"
-  end
-  lines.join "\n"
 end
