@@ -97,6 +97,7 @@ def generate_files
     generate_one "LICENSE.md", "license-template.erb"
     generate_one "#{gem_name}.gemspec", "gemspec-template.erb"
     generate_one ".yardopts", "yardopts-template.erb"
+    generate_one "Rakefile", "rakefile-template.erb"
     mkdir_p "lib/#{namespace_dir}"
     generate_one "lib/#{namespace_dir}/version.rb", "version-template.erb"
   end
