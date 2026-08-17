@@ -7,8 +7,19 @@ set -eo pipefail
 export GEM_HOME=$HOME/.gem
 export PATH=$GEM_HOME/bin:$PATH
 
-# Force Docker client to use legacy API version 1.39 to match Kokoro host daemon.
-export DOCKER_API_VERSION=1.39
+echo "=== ENVIRONMENT DEBUG ==="
+echo "PATH: $PATH"
+echo "User ID: $(id)"
+echo "Kernel: $(uname -r)"
+echo "Glibc version: $(ldd --version | head -n 1)"
+echo "DOCKER_API_VERSION: $DOCKER_API_VERSION"
+if which docker > /dev/null 2>&1; then
+  echo "Docker path: $(which docker)"
+  ls -l $(which docker)
+  docker version || true
+else
+  echo "Docker binary not found in PATH"
+fi
 
 cd gas
 toys gas kokoro-trigger -v
