@@ -15,5 +15,5 @@
 # limitations under the License.
 
 module OwlBot
-  VERSION = "0.12.2"
+  VERSION = "0.12.3"
 end
