@@ -18,7 +18,7 @@ RUN apt-get update \
     && apt-get -y autoremove \
     && apt-get -y autoclean
 RUN mkdir /ruby-postprocessor \
-    && gem install toys:0.21.0 rexml:3.4.4
+    && gem install toys:0.21.0 rexml:3.4.4 json:2.19.2
 WORKDIR /ruby-postprocessor
 COPY lib/*.rb /ruby-postprocessor/
 COPY lib/owlbot /ruby-postprocessor/owlbot

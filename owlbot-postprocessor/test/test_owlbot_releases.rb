@@ -42,7 +42,7 @@ describe OwlBotReleases do
     ::FileUtils.rm_rf repo_dir
     ::FileUtils.mkdir_p repo_dir
     ::Dir.chdir repo_dir do
-      run_process ["git", "init"]
+      run_process ["git", "init", "--ref-format=files"]
       run_process ["git", "commit", "--allow-empty", "-m", "commit 1"]
       run_process ["git", "commit", "--allow-empty", "-m", "commit 2"]
     end
