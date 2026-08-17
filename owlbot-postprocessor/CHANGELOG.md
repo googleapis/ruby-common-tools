@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.12.1 (2026-08-17)
+
+#### Bug Fixes
+
+* upgrade json dependency to 2.19.2 and automate tag deprecation ([#458](https://github.com/googleapis/ruby-common-tools/issues/458)) 
+
 ### 0.12.0 (2026-08-04)
 
 #### Features
