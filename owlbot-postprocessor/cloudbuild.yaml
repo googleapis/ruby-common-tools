@@ -4,11 +4,11 @@ steps:
     args:
       - '-c'
       - |
-        PREV_DIGEST=$(gcloud container images list-tags gcr.io/cloud-devrel-public-resources/owlbot-ruby --filter="tags=latest" --format="value(digest)" 2>/dev/null || true)
-        if [ ! -z "$PREV_DIGEST" ]; then
-          HEX_DIGEST=${PREV_DIGEST#sha256:}
-          echo "Previous latest digest found: $PREV_DIGEST. Adding deprecation tag..."
-          gcloud container images add-tag gcr.io/cloud-devrel-public-resources/owlbot-ruby@$PREV_DIGEST gcr.io/cloud-devrel-public-resources/owlbot-ruby:deprecated-public-image-$HEX_DIGEST --quiet
+        PREV_DIGEST=$$(gcloud container images list-tags gcr.io/cloud-devrel-public-resources/owlbot-ruby --filter="tags=latest" --format="value(digest)" 2>/dev/null || true)
+        if [ ! -z "$$PREV_DIGEST" ]; then
+          HEX_DIGEST=$${PREV_DIGEST#sha256:}
+          echo "Previous latest digest found: $$PREV_DIGEST. Adding deprecation tag..."
+          gcloud container images add-tag gcr.io/cloud-devrel-public-resources/owlbot-ruby@$$PREV_DIGEST gcr.io/cloud-devrel-public-resources/owlbot-ruby:deprecated-public-image-$$HEX_DIGEST --quiet
         else
           echo "No previous latest image found to deprecate."
         fi
