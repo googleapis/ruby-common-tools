@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.12.2 (2026-08-17)
+
+#### Bug Fixes
+
+* escape bash variables in cloudbuild.yaml ([#460](https://github.com/googleapis/ruby-common-tools/issues/460)) 
+
 ### 0.12.1 (2026-08-17)
 
 #### Bug Fixes
