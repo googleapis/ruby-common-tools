@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.12.3 (2026-08-17)
+
+#### Bug Fixes
+
+* ensure GCR digest has sha256 prefix ([#462](https://github.com/googleapis/ruby-common-tools/issues/462)) 
+
 ### 0.12.2 (2026-08-17)
 
 #### Bug Fixes
