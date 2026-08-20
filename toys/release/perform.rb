@@ -55,8 +55,8 @@ ensure
 end
 
 def load_deps
-  gem "gems", "~> 1.3" unless defined? Gems
-  gem "jwt", "~> 2.10" unless defined? JWT
+  gem "gems", "~> 1.3"
+  gem "jwt", "~> 2.10"
   require "fileutils"
   require "gems"
   require "json"
@@ -362,9 +362,8 @@ class Performer
       logger.warn "**** Gem #{gem_name} is already up to date at version #{gem_version}. Skipping."
       return
     end
-    transformation_info = {}
+    transformation_info = transform_links
     begin
-      transform_links transformation_info
       publish_gem dry_run: dry_run unless docs_only || @gem_name == "help"
       publish_docs dry_run: dry_run if docs_only || enable_docs
       publish_rad dry_run: dry_run if docs_only || enable_rad
@@ -373,22 +372,24 @@ class Performer
     end
   end
 
-  def transform_links transformation_info
+  def transform_links
     logger.info "**** Transforming links for #{gem_name}"
+    transformation_info = {}
     Dir.chdir gem_dir do
       Dir.glob "*.md" do |filename|
         content = File.read filename
         transformation_info[filename] = content
         transformed_content = content.gsub(/\[([^\]]*)\]\(([^):]*\.md)\)/, "{file:\\2 \\1}")
-        File.write filename, transformed_content
+        File.open(filename, "w") { |file| file << transformed_content }
       end
     end
+    transformation_info
   end
 
   def detransform_links transformation_info
     Dir.chdir gem_dir do
       transformation_info.each do |filename, content|
-        File.write filename, content
+        File.open(filename, "w") { |file| file << content }
       end
     end
   end

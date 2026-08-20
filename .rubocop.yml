@@ -11,7 +11,6 @@ AllCops:
 Metrics/BlockLength:
   Exclude:
     - "owlbot-postprocessor/test/test_*.rb"
-    - "test/**/*"
 Metrics/ClassLength:
   Max: 300
 Metrics/MethodLength:

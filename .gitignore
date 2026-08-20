@@ -6,4 +6,3 @@ Gemfile.lock
 .vagrant/
 .yardoc/
 /tmp/
-/vendor/
