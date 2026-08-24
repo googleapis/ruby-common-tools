@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.12.4 (2026-08-24)
+
+#### Bug Fixes
+
+* remove default json gemspec to clear CVE ([#464](https://github.com/googleapis/ruby-common-tools/issues/464)) 
+
 ### 0.12.3 (2026-08-17)
 
 #### Bug Fixes
