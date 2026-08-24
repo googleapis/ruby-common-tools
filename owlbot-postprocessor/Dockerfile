@@ -18,6 +18,9 @@ RUN apt-get update \
     && apt-get -y autoremove \
     && apt-get -y autoclean
 RUN mkdir /ruby-postprocessor \
+    # Clear default gemspec so static scanners see only patched json 2.19.2.
+    # Can be cleaned up once json >= 2.19.2 is bundled in the Ruby base image.
+    && rm -f /usr/local/lib/ruby/gems/*/specifications/default/json-*.gemspec \
     && gem install toys:0.21.0 rexml:3.4.4 json:2.19.2
 WORKDIR /ruby-postprocessor
 COPY lib/*.rb /ruby-postprocessor/
