@@ -14,6 +14,7 @@
 
 FROM ruby:4.0.6-bookworm
 RUN apt-get update \
+    && apt-get install -y --no-install-recommends libexpat1 expat \
     && apt-get -y upgrade \
     && apt-get -y autoremove \
     && apt-get -y autoclean
