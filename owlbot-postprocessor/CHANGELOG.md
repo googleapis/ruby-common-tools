@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.12.6 (2026-09-08)
+
+#### Bug Fixes
+
+* trigger CVE fix for libssh2 and aom ([#470](https://github.com/googleapis/ruby-common-tools/issues/470)) 
+
 ### 0.12.5 (2026-09-08)
 
 #### Bug Fixes
