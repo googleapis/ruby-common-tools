@@ -1,5 +1,11 @@
 # Changelog
 
+### 0.12.5 (2026-09-08)
+
+#### Bug Fixes
+
+* trigger CVE fix libexpat1/expat ([#468](https://github.com/googleapis/ruby-common-tools/issues/468)) 
+
 ### 0.12.4 (2026-08-24)
 
 #### Bug Fixes
