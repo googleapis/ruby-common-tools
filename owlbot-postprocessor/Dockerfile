@@ -14,6 +14,7 @@
 
 FROM ruby:4.0.6-bookworm
 RUN apt-get update \
+    # Can be removed once libexpat1/expat >= 2.5.0-1+deb12u3 is bundled in the base image.
     && apt-get install -y libexpat1 expat \
     && apt-get -y upgrade \
     && apt-get -y autoremove \
