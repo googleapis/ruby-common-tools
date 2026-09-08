@@ -37,6 +37,7 @@ flag :docs_staging_bucket, "--docs-staging-bucket=VALUE", default: ENV["STAGING_
 flag :rad_staging_bucket, "--rad-staging-bucket=VALUE", default: ENV["V2_STAGING_BUCKET"]
 flag :docuploader_credentials, "--docuploader-credentials=VALUE", default: ENV["DOCUPLOADER_CREDENTIALS"]
 flag :docs_only
+flag :build_only
 
 include :exec, e: true
 
@@ -46,12 +47,12 @@ def run
   log_identity
   load_deps
   load_env
-  start_report
+  start_report unless build_only
   @success = false
   perform_release
   @success = true
 ensure
-  finish_report
+  finish_report unless build_only
 end
 
 def load_deps
@@ -239,7 +240,8 @@ def perform_release_gem name:, last_version:
                enable_docs: enable_docs,
                enable_rad: enable_rad,
                dry_run: dry_run,
-               docs_only: docs_only
+               docs_only: docs_only,
+               build_only: build_only
 end
 
 def determine_packages
@@ -357,19 +359,32 @@ class Performer
           enable_docs: false,
           enable_rad: false,
           dry_run: false,
-          docs_only: false
-    unless docs_only || force_republish || needs_gem_publish?
+          docs_only: false,
+          build_only: false
+    unless build_only || docs_only || force_republish || needs_gem_publish?
       logger.warn "**** Gem #{gem_name} is already up to date at version #{gem_version}. Skipping."
       return
     end
     transformation_info = transform_links
     begin
-      publish_gem dry_run: dry_run unless docs_only || @gem_name == "help"
-      publish_docs dry_run: dry_run if docs_only || enable_docs
-      publish_rad dry_run: dry_run if docs_only || enable_rad
+      unless docs_only || @gem_name == "help"
+        publish_gem dry_run: dry_run, build_only: build_only
+      end
+      unless build_only
+        publish_docs_and_rad dry_run: dry_run, docs_only: docs_only,
+                             enable_docs: enable_docs, enable_rad: enable_rad
+      end
     ensure
       detransform_links transformation_info
     end
+  end
+
+  def publish_docs_and_rad dry_run: false,
+                           docs_only: false,
+                           enable_docs: false,
+                           enable_rad: false
+    publish_docs dry_run: dry_run if docs_only || enable_docs
+    publish_rad dry_run: dry_run if docs_only || enable_rad
   end
 
   def transform_links
@@ -394,9 +409,9 @@ class Performer
     end
   end
 
-  def publish_gem dry_run: false
+  def publish_gem dry_run: false, build_only: false
     Dir.chdir gem_dir do
-      unless needs_gem_publish?
+      unless build_only || needs_gem_publish?
         logger.warn "**** Already published. Skipping gem publish of #{gem_name}"
         return
       end
@@ -404,6 +419,10 @@ class Performer
       run_aux_task "build", remove: "pkg"
       built_gem_path = "pkg/#{gem_name}-#{gem_version}.gem"
       raise "Failed to build #{built_gem_path}" unless File.file? built_gem_path
+      if build_only
+        logger.info "**** Built gem artifact: #{built_gem_path}"
+        return
+      end
       if dry_run
         logger.warn "**** In dry run mode. Skipping gem publish of #{gem_name}"
         return
