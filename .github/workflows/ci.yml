@@ -63,4 +63,4 @@ jobs:
       shell: bash
       env:
         GITHUB_EVENT_NAME: ${{ github.event_name }}
-      run: toys ci ${{ matrix.jobs }} --include-owlbot-build --github-event-name="$GITHUB_EVENT_NAME" --github-event-payload="${GITHUB_EVENT_PATH}" < /dev/null
+      run: toys ci ${{ matrix.jobs }} --github-event-name="$GITHUB_EVENT_NAME" --github-event-payload="${GITHUB_EVENT_PATH}" < /dev/null

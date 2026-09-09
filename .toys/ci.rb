@@ -17,7 +17,7 @@ toys_version! "~> 0.21"
 desc "Run CI checks"
 
 CHECKS = [:test, :rubocop]
-DIRS = ["owlbot-postprocessor", "gas"]
+DIRS = ["gas"]
 
 flag :only
 CHECKS.each do |name|
@@ -29,9 +29,6 @@ flag :dirs, "--dirs=NAMES" do |f|
 end
 flag :all_dirs do |f|
   f.desc "Test all dirs."
-end
-flag :include_owlbot_build do |f|
-  f.desc "Build owlbot postprocessor"
 end
 flag :github_event_name, "--github-event-name=EVENT" do |f|
   f.default ""
@@ -93,13 +90,6 @@ def run_test
     name = "#{dir}: test"
     Dir.chdir dir do
       puts "RUNNING: #{name}", :bold, :cyan
-      if dir == "owlbot-postprocessor" && include_owlbot_build
-        result = exec_separate_tool ["build"] + verbosity_flags, name: "owlbot postprocessor build"
-        unless result.success?
-          puts "FAILED BUILD: #{name}", :bold, :red
-          next
-        end
-      end
       result = exec_separate_tool ["test"], name: "Tests in #{dir}"
       if result.success?
         puts "PASSED: #{name}", :bold, :green
@@ -209,15 +199,4 @@ def find_changed_dirs files
     dirs << dir
   end
   dirs.to_a & DIRS
-end
-
-tool "build" do
-  include :exec, e: true
-
-  def run
-    Dir.chdir context_directory
-    Dir.chdir "owlbot-postprocessor" do
-      exec_separate_tool ["build"] + verbosity_flags
-    end
-  end
 end

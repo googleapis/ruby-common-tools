@@ -10,10 +10,5 @@
   "separate-pull-requests": true,
   "tag-separator": "/",
   "sequential-calls": true,
-  "packages": {
-    "owlbot-postprocessor": {
-      "component": "owlbot-postprocessor",
-      "version-file": "lib/version.rb"
-    }
-  }
+  "packages": {}
 }
