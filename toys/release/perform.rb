@@ -383,7 +383,9 @@ class Performer
                            docs_only: false,
                            enable_docs: false,
                            enable_rad: false
-    publish_docs dry_run: dry_run if docs_only || enable_docs
+    # Legacy docs (docs_staging_bucket) are published only with --enable-docs,
+    # same as a normal release. --docs-only does not turn them on.
+    publish_docs dry_run: dry_run if enable_docs
     publish_rad dry_run: dry_run if docs_only || enable_rad
   end
 
