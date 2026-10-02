@@ -361,6 +361,7 @@ class Performer
           dry_run: false,
           docs_only: false,
           build_only: false
+    @docs_only = docs_only
     unless build_only || docs_only || force_republish || needs_gem_publish?
       logger.warn "**** Gem #{gem_name} is already up to date at version #{gem_version}. Skipping."
       return
@@ -460,6 +461,9 @@ class Performer
       result = cli.run(*tool_name[0..-2], "build-rad", "--gem-name", gem_name, "--friendly-api-name", friendly_api_name)
       unless result.zero?
         logger.error "**** build-rad failed! Aborting publish_rad."
+        # In --docs-only mode publishing docs is the whole job, so fail it
+        # instead of finishing green with nothing uploaded.
+        raise "build-rad failed for #{gem_name}" if @docs_only
         return
       end
       run_docuploader staging_bucket: rad_staging_bucket,
