@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Copyright 2021 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,16 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-expand :clean, paths: :gitignore
-
-expand :rubocop, bundler: true
-
-expand :minitest do |t|
-  t.libs = ["lib"]
-  t.files = "test/**/*_test.rb"
-  t.use_bundler
-end
-
-tool "release" do
-  load ::File.join(::File.dirname(__dir__), "toys", "release")
-end
+# Lets callers that put this repository's lib directory on the load path
+# require "gapic/minitest_junit_preloader". The preloader itself stays in
+# toys/gapic/lib, because toys `load_git` copies only the toys/gapic directory
+# into its cache. It can move here once the toys directory is removed.
+require_relative "../../toys/gapic/lib/gapic/minitest_junit_preloader"
