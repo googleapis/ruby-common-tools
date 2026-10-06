@@ -386,7 +386,7 @@ class Performer
     # Legacy docs (docs_staging_bucket) are published only with --enable-docs,
     # same as a normal release. --docs-only does not turn them on.
     publish_docs dry_run: dry_run if enable_docs
-    publish_rad dry_run: dry_run if docs_only || enable_rad
+    publish_rad dry_run: dry_run, docs_only: docs_only if docs_only || enable_rad
   end
 
   def transform_links
@@ -448,7 +448,7 @@ class Performer
     end
   end
 
-  def publish_rad dry_run: false
+  def publish_rad dry_run: false, docs_only: false
     Dir.chdir gem_dir do
       if repo_metadata["is_cloud"] == false
         logger.info "**** Disabled publish_rad for #{gem_name} because repo-metadata sets is_cloud to false."
@@ -462,6 +462,9 @@ class Performer
       result = cli.run(*tool_name[0..-2], "build-rad", "--gem-name", gem_name, "--friendly-api-name", friendly_api_name)
       unless result.zero?
         logger.error "**** build-rad failed! Aborting publish_rad."
+        # In --docs-only mode publishing docs is the whole job, so fail it
+        # instead of finishing green with nothing uploaded.
+        raise "build-rad failed for #{gem_name}" if docs_only
         return
       end
       run_docuploader staging_bucket: rad_staging_bucket,
