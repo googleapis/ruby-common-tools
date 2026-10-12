@@ -58,7 +58,7 @@ jobs:
         node-version: "24.x"
     - name: Install tools and deps
       shell: bash
-      run: "gem install --no-document toys && bundle install"
+      run: "gem install --no-document toys -v '~> 0.22.0' && bundle install"
     - name: Test
       shell: bash
       env:
