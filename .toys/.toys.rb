@@ -19,7 +19,7 @@ expand :clean, paths: :gitignore
 expand :rubocop, bundler: true
 
 expand :minitest do |t|
-  t.libs = ["toys/gapic/lib"]
+  t.libs = ["lib"]
   t.files = "test/**/*_test.rb"
   t.use_bundler
 end

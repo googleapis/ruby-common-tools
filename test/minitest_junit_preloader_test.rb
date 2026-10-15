@@ -22,31 +22,59 @@ require "English"
 class MinitestJunitPreloaderTest < Minitest::Test
   def test_preloader_generates_xml_in_current_directory
     Dir.mktmpdir do |dir|
-      write_dummy_test dir
-      output = run_subprocess dir
+      output = run_dummy_test dir, File.expand_path("../toys/gapic/lib", __dir__)
+      assert_sponge_log dir, output
+    end
+  end
 
-      # Assert subprocess succeeded
-      assert $CHILD_STATUS.success?, "Dummy test execution in subprocess failed. Output:\n#{output}"
+  def test_lib_path_loads_preloader
+    Dir.mktmpdir do |dir|
+      output = run_dummy_test dir, File.expand_path("../lib", __dir__)
+      assert_sponge_log dir, output
+    end
+  end
 
-      # Assert sponge_log.xml was generated directly inside `dir` (current directory)
-      xml_file = File.join dir, "sponge_log.xml"
-      assert File.exist?(xml_file), "Expected sponge_log.xml to be generated at the current directory"
-
-      # Assert no tmp/reports directory was created
-      refute File.exist?(File.join(dir, "tmp")), "Expected no tmp/ directory to be created"
-
-      # Verify XML content
-      xml_content = File.read xml_file
-      assert_includes xml_content, "<testsuite name=\"DummyTest\""
-      assert_includes xml_content, "<testcase name=\"test_success\""
-
-      # Verify time duration format (must be decimal with 6 decimal places, no scientific notation)
-      assert_match(/time="\d+\.\d{6}"/, xml_content, "Expected duration formatted as 6-digit decimal")
-      refute_match(/time="[^"]*e-[^"]*"/, xml_content, "Expected duration not to use scientific notation")
+  # Gems that load toys/gapic through toys `load_git` get only that
+  # directory: toys-core's GitCache copies just the requested path into its
+  # cache, so nothing outside toys/gapic is available to it.
+  def test_toys_gapic_copied_alone_loads_preloader
+    Dir.mktmpdir do |cache|
+      FileUtils.mkdir_p File.join(cache, "toys")
+      FileUtils.cp_r File.expand_path("../toys/gapic", __dir__), File.join(cache, "toys")
+      Dir.mktmpdir do |dir|
+        output = run_dummy_test dir, File.join(cache, "toys", "gapic", "lib")
+        assert_sponge_log dir, output
+      end
     end
   end
 
   private
+
+  def assert_sponge_log dir, output
+    # Assert subprocess succeeded
+    assert $CHILD_STATUS.success?, "Dummy test execution in subprocess failed. Output:\n#{output}"
+
+    # Assert sponge_log.xml was generated directly inside `dir` (current directory)
+    xml_file = File.join dir, "sponge_log.xml"
+    assert File.exist?(xml_file), "Expected sponge_log.xml to be generated at the current directory"
+
+    # Assert no tmp/reports directory was created
+    refute File.exist?(File.join(dir, "tmp")), "Expected no tmp/ directory to be created"
+
+    # Verify XML content
+    xml_content = File.read xml_file
+    assert_includes xml_content, "<testsuite name=\"DummyTest\""
+    assert_includes xml_content, "<testcase name=\"test_success\""
+
+    # Verify time duration format (must be decimal with 6 decimal places, no scientific notation)
+    assert_match(/time="\d+\.\d{6}"/, xml_content, "Expected duration formatted as 6-digit decimal")
+    refute_match(/time="[^"]*e-[^"]*"/, xml_content, "Expected duration not to use scientific notation")
+  end
+
+  def run_dummy_test dir, lib_dir
+    write_dummy_test dir
+    run_subprocess dir, lib_dir
+  end
 
   def write_dummy_test dir
     test_file = File.join dir, "dummy_test.rb"
@@ -62,8 +90,7 @@ class MinitestJunitPreloaderTest < Minitest::Test
     RUBY
   end
 
-  def run_subprocess dir
-    lib_dir = File.expand_path "../toys/gapic/lib", __dir__
+  def run_subprocess dir, lib_dir
     test_file = File.join dir, "dummy_test.rb"
     cmd = [
       "bundle", "exec", "ruby",
