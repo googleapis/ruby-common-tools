@@ -16,4 +16,10 @@
 
 expand :clean, paths: ["workspace"]
 
-tool "test", delegate_to: ["system", "test"]
+tool "test" do
+  disable_argument_parsing
+
+  def run
+    exit cli.run "system", "test", "--minitest-mock", *args
+  end
+end
