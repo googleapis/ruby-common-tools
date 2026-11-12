@@ -43,7 +43,7 @@ describe "gas kokoro-trigger" do
       "x86_64-linux"
     ]
   end
-  let(:ruby_versions) { ["3.2", "3.3", "3.4", "4.0"] }
+  let(:ruby_versions) { Gas::DEFAULT_RUBIES }
   let(:gem_and_version) { "google-protobuf-3.25.2" }
   let(:protobuf_env) do
     {
