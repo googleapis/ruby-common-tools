@@ -23,5 +23,5 @@ Gem::Specification.new do |gem|
   gem.platform = Gem::Platform::RUBY
   gem.files = ["README.md", "LICENSE.md", ".yardopts", "lib/<%= namespace_dir %>/version.rb"]
   gem.require_paths = ["lib"]
-  gem.required_ruby_version = ">= 3.0"
+  gem.required_ruby_version = ">= <%= minimum_ruby_version %>"
 end

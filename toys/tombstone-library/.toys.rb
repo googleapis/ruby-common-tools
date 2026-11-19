@@ -95,6 +95,32 @@ def cur_year
   Time.now.year.to_s
 end
 
+def minimum_ruby_version
+  @minimum_ruby_version ||= begin
+    remote, commit = git_source_info
+    versions_file =
+      if remote
+        require "toys/utils/git_cache"
+        Toys::Utils::GitCache.new.get remote, path: "ruby_versions.yml", commit: commit
+      else
+        File.expand_path "../../ruby_versions.yml", __dir__
+      end
+    require "yaml"
+    YAML.load_file(versions_file).fetch "minimum"
+  end
+end
+
+def git_source_info
+  source = self[Toys::Context::Key::TOOL_SOURCE]
+  if source.respond_to? :origin
+    origin = source.origin
+    return [origin.remote, origin.commit] if origin.is_a? Toys::SourceInfo::Origin::Git
+  elsif source.git_remote
+    return [source.git_remote, source.git_commit]
+  end
+  nil
+end
+
 def namespace_modules
   @namespace_modules ||= gem_name.split("-").map { |segment| segment.split("_").map(&:capitalize).join }
 end
