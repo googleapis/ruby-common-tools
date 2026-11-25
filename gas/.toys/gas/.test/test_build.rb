@@ -17,6 +17,7 @@
 require "fileutils"
 require "tmpdir"
 require "toys/utils/exec"
+require_relative "../.preload"
 
 describe "gas build" do
   include Toys::Testing
@@ -50,10 +51,10 @@ describe "gas build" do
   # See https://github.com/rake-compiler/rake-compiler-dock/issues/189 for details about the issue with
   # this platform and Ruby version combination:
   let(:excluded_combinations) { [["x86-mingw32", "4.0"]] }
-  let(:windows_ruby_versions) { ["3.2", "4.0"] }
+  let(:windows_ruby_versions) { [Gas::MINIMUM_RUBY, Gas::DEFAULT_RUBIES.last].uniq }
   let(:host_platform) { "#{`uname -m`.strip}-#{`uname -s`.strip.downcase}" }
   let(:host_ruby_version) { RUBY_VERSION.sub(/^(\d+\.\d+).*$/, "\\1") }
-  let(:multi_rubies) { ["3.2", "3.3", "3.4", "4.0" ]}
+  let(:multi_rubies) { Gas::DEFAULT_RUBIES }
   let(:gem_version_for_multi_rubies) { "4.29.2" }
   let(:platform_for_multi_rubies) { "x86_64-linux-gnu" }
 
@@ -152,7 +153,7 @@ describe "gas build" do
 
   it "loads on the current platform" do
     skip unless all_platforms.include? host_platform
-    quiet_build host_platform, [host_ruby_version, "3.2"]
+    quiet_build host_platform, [host_ruby_version, Gas::MINIMUM_RUBY]
     Dir.chdir workspace_dir do
       gem_file = "#{gem_and_version}/pkg/#{gem_and_version}-#{host_platform}.gem"
       exec_service.exec ["gem", "install", gem_file], env: { "GEM_HOME" => "vendor" }, out: :null

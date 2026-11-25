@@ -14,10 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "yaml"
+
 ##
 # Common settings for Gas tools
 #
 module Gas
+  ruby_versions = ::YAML.load_file ::File.expand_path("../../../ruby_versions.yml", __dir__)
+
+  ##
+  # Minimum supported Ruby version
+  #
+  MINIMUM_RUBY = ruby_versions.fetch("minimum").freeze
+
   ##
   # Platforms to build if no platforms are specified on the command line
   #
@@ -37,7 +46,7 @@ module Gas
   ##
   # Ruby versions to build if no versions are specified on the command line
   #
-  DEFAULT_RUBIES = ["3.2", "3.3", "3.4", "4.0"]
+  DEFAULT_RUBIES = ruby_versions.fetch("supported").map(&:freeze).freeze
 
   ##
   # Version of the Gems gem to install
